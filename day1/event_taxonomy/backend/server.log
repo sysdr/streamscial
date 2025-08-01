@@ -1,0 +1,67 @@
+INFO:     Will watch for changes in these directories: ['/Users/sumedhshende/sysd/kafka/day1/streamsocial-day1/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [49839] using StatReload
+INFO:     Started server process [49908]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+📡 Subscribed handler to EventType.POST_CREATED
+📡 Subscribed handler to EventType.POST_LIKED
+📡 Subscribed handler to EventType.FOLLOW_INITIATED
+📡 Subscribed handler to EventType.COMMENT_ADDED
+INFO:     127.0.0.1:52468 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52489 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52512 - "GET /api/stats HTTP/1.1" 200 OK
+WARNING:  StatReload detected changes in 'src/main.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [49908]
+INFO:     Started server process [50486]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+📡 Subscribed handler to EventType.POST_CREATED
+📡 Subscribed handler to EventType.POST_LIKED
+📡 Subscribed handler to EventType.FOLLOW_INITIATED
+📡 Subscribed handler to EventType.COMMENT_ADDED
+INFO:     127.0.0.1:53724 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53727 - "GET /assets/index-boBiKPHb.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53724 - "GET /assets/index-BLgHbkpr.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53724 - "GET /api/events?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53727 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     ('127.0.0.1', 53731) - "WebSocket /ws" [accepted]
+INFO:     connection open
+INFO:     127.0.0.1:53727 - "GET /vite.svg HTTP/1.1" 404 Not Found
+🔄 Feed updated for user user_647
+✅ Published EventType.POST_CREATED event: 224ea4a7-2a94-42fc-8f29-969da674762a
+INFO:     127.0.0.1:53746 - "POST /api/events/post HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53749 - "GET /api/events?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53750 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53749 - "GET /api/events?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53750 - "GET /api/stats HTTP/1.1" 200 OK
+❤️ Post post_602 liked
+✅ Published post_liked event: 6e4bf0eb-5eb4-4850-b382-21718c2c4e5a
+INFO:     127.0.0.1:53752 - "POST /api/events/like HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53752 - "GET /api/events?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53755 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53752 - "GET /api/events?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53755 - "GET /api/stats HTTP/1.1" 200 OK
+🔔 Notification sent to user user_106
+✅ Published follow_initiated event: cc232096-6141-4a5e-9dc4-2c4c3ba8cbee
+INFO:     127.0.0.1:53755 - "POST /api/events/follow HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53755 - "GET /api/events?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53752 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53755 - "GET /api/events?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53752 - "GET /api/stats HTTP/1.1" 200 OK
+💬 Comment notification sent to user user_944
+✅ Published EventType.COMMENT_ADDED event: 75e5d961-c25d-45b8-8315-3197a22edc06
+INFO:     127.0.0.1:53752 - "POST /api/events/comment HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53755 - "GET /api/events?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53752 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53755 - "GET /api/events?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53752 - "GET /api/stats HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     connection closed
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [50486]
+INFO:     Stopping reloader process [49839]
