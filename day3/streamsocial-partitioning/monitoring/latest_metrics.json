@@ -1,0 +1,503 @@
+{
+  "cluster_health": {
+    "total_partitions": 1500,
+    "active_partitions": 1200,
+    "avg_throughput": 163.0,
+    "overall_health": "healthy",
+    "hotspots": [
+      304,
+      863,
+      627,
+      344,
+      688
+    ],
+    "cold_spots": [
+      501,
+      488,
+      54
+    ],
+    "last_updated": "2025-08-06T14:51:29.795561"
+  },
+  "partition_metrics": [
+    {
+      "partition_id": 0,
+      "topic_name": "user-actions",
+      "throughput_rps": 131.3,
+      "lag": 2
+    },
+    {
+      "partition_id": 1,
+      "topic_name": "user-actions",
+      "throughput_rps": 159.4,
+      "lag": 7
+    },
+    {
+      "partition_id": 2,
+      "topic_name": "user-actions",
+      "throughput_rps": 166.9,
+      "lag": 3
+    },
+    {
+      "partition_id": 3,
+      "topic_name": "user-actions",
+      "throughput_rps": 163.8,
+      "lag": 2
+    },
+    {
+      "partition_id": 4,
+      "topic_name": "user-actions",
+      "throughput_rps": 120.1,
+      "lag": 1
+    },
+    {
+      "partition_id": 5,
+      "topic_name": "user-actions",
+      "throughput_rps": 119.7,
+      "lag": 8
+    },
+    {
+      "partition_id": 6,
+      "topic_name": "user-actions",
+      "throughput_rps": 210.7,
+      "lag": 6
+    },
+    {
+      "partition_id": 7,
+      "topic_name": "user-actions",
+      "throughput_rps": 184.0,
+      "lag": 8
+    },
+    {
+      "partition_id": 8,
+      "topic_name": "user-actions",
+      "throughput_rps": 245.5,
+      "lag": 6
+    },
+    {
+      "partition_id": 9,
+      "topic_name": "user-actions",
+      "throughput_rps": 162.2,
+      "lag": 4
+    },
+    {
+      "partition_id": 10,
+      "topic_name": "user-actions",
+      "throughput_rps": 148.1,
+      "lag": 7
+    },
+    {
+      "partition_id": 11,
+      "topic_name": "user-actions",
+      "throughput_rps": 75.7,
+      "lag": 5
+    },
+    {
+      "partition_id": 12,
+      "topic_name": "user-actions",
+      "throughput_rps": 264.1,
+      "lag": 10
+    },
+    {
+      "partition_id": 13,
+      "topic_name": "user-actions",
+      "throughput_rps": 71.0,
+      "lag": 0
+    },
+    {
+      "partition_id": 14,
+      "topic_name": "user-actions",
+      "throughput_rps": 102.5,
+      "lag": 7
+    },
+    {
+      "partition_id": 15,
+      "topic_name": "user-actions",
+      "throughput_rps": 269.4,
+      "lag": 0
+    },
+    {
+      "partition_id": 16,
+      "topic_name": "user-actions",
+      "throughput_rps": 74.7,
+      "lag": 9
+    },
+    {
+      "partition_id": 17,
+      "topic_name": "user-actions",
+      "throughput_rps": 227.3,
+      "lag": 2
+    },
+    {
+      "partition_id": 18,
+      "topic_name": "user-actions",
+      "throughput_rps": 122.0,
+      "lag": 9
+    },
+    {
+      "partition_id": 19,
+      "topic_name": "user-actions",
+      "throughput_rps": 220.5,
+      "lag": 6
+    },
+    {
+      "partition_id": 20,
+      "topic_name": "user-actions",
+      "throughput_rps": 232.0,
+      "lag": 8
+    },
+    {
+      "partition_id": 21,
+      "topic_name": "user-actions",
+      "throughput_rps": 119.4,
+      "lag": 10
+    },
+    {
+      "partition_id": 22,
+      "topic_name": "user-actions",
+      "throughput_rps": 96.4,
+      "lag": 4
+    },
+    {
+      "partition_id": 23,
+      "topic_name": "user-actions",
+      "throughput_rps": 193.2,
+      "lag": 6
+    },
+    {
+      "partition_id": 24,
+      "topic_name": "user-actions",
+      "throughput_rps": 69.4,
+      "lag": 2
+    },
+    {
+      "partition_id": 25,
+      "topic_name": "user-actions",
+      "throughput_rps": 183.9,
+      "lag": 6
+    },
+    {
+      "partition_id": 26,
+      "topic_name": "user-actions",
+      "throughput_rps": 153.2,
+      "lag": 6
+    },
+    {
+      "partition_id": 27,
+      "topic_name": "user-actions",
+      "throughput_rps": 230.9,
+      "lag": 5
+    },
+    {
+      "partition_id": 28,
+      "topic_name": "user-actions",
+      "throughput_rps": 226.8,
+      "lag": 10
+    },
+    {
+      "partition_id": 29,
+      "topic_name": "user-actions",
+      "throughput_rps": 174.3,
+      "lag": 10
+    },
+    {
+      "partition_id": 30,
+      "topic_name": "user-actions",
+      "throughput_rps": 240.1,
+      "lag": 6
+    },
+    {
+      "partition_id": 31,
+      "topic_name": "user-actions",
+      "throughput_rps": 190.1,
+      "lag": 10
+    },
+    {
+      "partition_id": 32,
+      "topic_name": "user-actions",
+      "throughput_rps": 136.6,
+      "lag": 8
+    },
+    {
+      "partition_id": 33,
+      "topic_name": "user-actions",
+      "throughput_rps": 74.7,
+      "lag": 1
+    },
+    {
+      "partition_id": 34,
+      "topic_name": "user-actions",
+      "throughput_rps": 219.0,
+      "lag": 7
+    },
+    {
+      "partition_id": 35,
+      "topic_name": "user-actions",
+      "throughput_rps": 116.5,
+      "lag": 7
+    },
+    {
+      "partition_id": 36,
+      "topic_name": "user-actions",
+      "throughput_rps": 152.9,
+      "lag": 9
+    },
+    {
+      "partition_id": 37,
+      "topic_name": "user-actions",
+      "throughput_rps": 99.8,
+      "lag": 2
+    },
+    {
+      "partition_id": 38,
+      "topic_name": "user-actions",
+      "throughput_rps": 227.8,
+      "lag": 1
+    },
+    {
+      "partition_id": 39,
+      "topic_name": "user-actions",
+      "throughput_rps": 68.6,
+      "lag": 5
+    },
+    {
+      "partition_id": 40,
+      "topic_name": "user-actions",
+      "throughput_rps": 91.4,
+      "lag": 8
+    },
+    {
+      "partition_id": 41,
+      "topic_name": "user-actions",
+      "throughput_rps": 151.1,
+      "lag": 5
+    },
+    {
+      "partition_id": 42,
+      "topic_name": "user-actions",
+      "throughput_rps": 118.6,
+      "lag": 9
+    },
+    {
+      "partition_id": 43,
+      "topic_name": "user-actions",
+      "throughput_rps": 152.6,
+      "lag": 10
+    },
+    {
+      "partition_id": 44,
+      "topic_name": "user-actions",
+      "throughput_rps": 179.3,
+      "lag": 10
+    },
+    {
+      "partition_id": 45,
+      "topic_name": "user-actions",
+      "throughput_rps": 247.3,
+      "lag": 7
+    },
+    {
+      "partition_id": 46,
+      "topic_name": "user-actions",
+      "throughput_rps": 95.9,
+      "lag": 4
+    },
+    {
+      "partition_id": 47,
+      "topic_name": "user-actions",
+      "throughput_rps": 206.3,
+      "lag": 6
+    },
+    {
+      "partition_id": 48,
+      "topic_name": "user-actions",
+      "throughput_rps": 221.4,
+      "lag": 0
+    },
+    {
+      "partition_id": 49,
+      "topic_name": "user-actions",
+      "throughput_rps": 292.1,
+      "lag": 4
+    },
+    {
+      "partition_id": 0,
+      "topic_name": "content-interactions",
+      "throughput_rps": 117.8,
+      "lag": 5
+    },
+    {
+      "partition_id": 1,
+      "topic_name": "content-interactions",
+      "throughput_rps": 168.9,
+      "lag": 3
+    },
+    {
+      "partition_id": 2,
+      "topic_name": "content-interactions",
+      "throughput_rps": 244.2,
+      "lag": 5
+    },
+    {
+      "partition_id": 3,
+      "topic_name": "content-interactions",
+      "throughput_rps": 156.1,
+      "lag": 5
+    },
+    {
+      "partition_id": 4,
+      "topic_name": "content-interactions",
+      "throughput_rps": 111.3,
+      "lag": 0
+    },
+    {
+      "partition_id": 5,
+      "topic_name": "content-interactions",
+      "throughput_rps": 107.2,
+      "lag": 5
+    },
+    {
+      "partition_id": 6,
+      "topic_name": "content-interactions",
+      "throughput_rps": 187.2,
+      "lag": 7
+    },
+    {
+      "partition_id": 7,
+      "topic_name": "content-interactions",
+      "throughput_rps": 212.5,
+      "lag": 4
+    },
+    {
+      "partition_id": 8,
+      "topic_name": "content-interactions",
+      "throughput_rps": 215.3,
+      "lag": 4
+    },
+    {
+      "partition_id": 9,
+      "topic_name": "content-interactions",
+      "throughput_rps": 117.8,
+      "lag": 2
+    },
+    {
+      "partition_id": 10,
+      "topic_name": "content-interactions",
+      "throughput_rps": 150.7,
+      "lag": 0
+    },
+    {
+      "partition_id": 11,
+      "topic_name": "content-interactions",
+      "throughput_rps": 198.5,
+      "lag": 0
+    },
+    {
+      "partition_id": 12,
+      "topic_name": "content-interactions",
+      "throughput_rps": 157.1,
+      "lag": 1
+    },
+    {
+      "partition_id": 13,
+      "topic_name": "content-interactions",
+      "throughput_rps": 217.8,
+      "lag": 3
+    },
+    {
+      "partition_id": 14,
+      "topic_name": "content-interactions",
+      "throughput_rps": 166.8,
+      "lag": 2
+    },
+    {
+      "partition_id": 15,
+      "topic_name": "content-interactions",
+      "throughput_rps": 124.0,
+      "lag": 5
+    },
+    {
+      "partition_id": 16,
+      "topic_name": "content-interactions",
+      "throughput_rps": 155.9,
+      "lag": 8
+    },
+    {
+      "partition_id": 17,
+      "topic_name": "content-interactions",
+      "throughput_rps": 130.1,
+      "lag": 3
+    },
+    {
+      "partition_id": 18,
+      "topic_name": "content-interactions",
+      "throughput_rps": 233.7,
+      "lag": 1
+    },
+    {
+      "partition_id": 19,
+      "topic_name": "content-interactions",
+      "throughput_rps": 139.4,
+      "lag": 7
+    },
+    {
+      "partition_id": 20,
+      "topic_name": "content-interactions",
+      "throughput_rps": 157.3,
+      "lag": 4
+    },
+    {
+      "partition_id": 21,
+      "topic_name": "content-interactions",
+      "throughput_rps": 106.8,
+      "lag": 2
+    },
+    {
+      "partition_id": 22,
+      "topic_name": "content-interactions",
+      "throughput_rps": 187.1,
+      "lag": 2
+    },
+    {
+      "partition_id": 23,
+      "topic_name": "content-interactions",
+      "throughput_rps": 168.0,
+      "lag": 4
+    },
+    {
+      "partition_id": 24,
+      "topic_name": "content-interactions",
+      "throughput_rps": 88.9,
+      "lag": 8
+    },
+    {
+      "partition_id": 25,
+      "topic_name": "content-interactions",
+      "throughput_rps": 202.7,
+      "lag": 5
+    },
+    {
+      "partition_id": 26,
+      "topic_name": "content-interactions",
+      "throughput_rps": 106.6,
+      "lag": 4
+    },
+    {
+      "partition_id": 27,
+      "topic_name": "content-interactions",
+      "throughput_rps": 115.2,
+      "lag": 5
+    },
+    {
+      "partition_id": 28,
+      "topic_name": "content-interactions",
+      "throughput_rps": 211.0,
+      "lag": 8
+    },
+    {
+      "partition_id": 29,
+      "topic_name": "content-interactions",
+      "throughput_rps": 186.4,
+      "lag": 2
+    }
+  ]
+}
