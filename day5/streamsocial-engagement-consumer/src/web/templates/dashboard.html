@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial Engagement Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.15);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .stat-title { font-size: 14px; opacity: 0.8; margin-bottom: 5px; }
+        .stat-value { 
+            font-size: 32px; 
+            font-weight: bold; 
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .metrics-section {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+        }
+        .engagement-posts {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .post-card {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .post-id { font-weight: bold; font-size: 12px; opacity: 0.7; }
+        .engagement-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .engagement-item {
+            text-align: center;
+            padding: 5px;
+        }
+        .engagement-count { font-size: 18px; font-weight: bold; }
+        .engagement-label { font-size: 10px; opacity: 0.8; }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .chart-container {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            margin-top: 20px;
+            height: 300px;
+        }
+        .live-indicator {
+            color: #4CAF50;
+            font-weight: bold;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 StreamSocial Engagement Dashboard</h1>
+            <p>Real-time Kafka Consumer Monitoring - <span class="live-indicator">● LIVE</span></p>
+            <div class="status-indicator"></div> Consumer Status: <span id="connection-status">Connecting...</span>
+        </div>
+
+        <!-- System Metrics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-title">Messages Processed</div>
+                <div class="stat-value" id="messages-processed">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Success Rate</div>
+                <div class="stat-value" id="success-rate">100%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">Avg Processing Time</div>
+                <div class="stat-value" id="processing-time">0ms</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-title">System CPU</div>
+                <div class="stat-value" id="cpu-usage">0%</div>
+            </div>
+        </div>
+
+        <!-- Live Engagement Stats -->
+        <div class="metrics-section">
+            <h2>📊 Live Engagement Statistics</h2>
+            <div id="engagement-posts" class="engagement-posts">
+                <div class="post-card">
+                    <div class="post-id">No engagement data yet...</div>
+                    <p style="opacity: 0.7; font-size: 12px; margin-top: 10px;">
+                        Waiting for engagement events from Kafka...
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Chart -->
+        <div class="chart-container">
+            <canvas id="performanceChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // Socket.IO connection
+        const socket = io();
+        
+        // Chart setup
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Messages/sec',
+                    data: [],
+                    borderColor: 'rgba(76, 175, 80, 1)',
+                    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: 'white' } }
+                },
+                scales: {
+                    x: { 
+                        ticks: { color: 'white' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    },
+                    y: { 
+                        ticks: { color: 'white' },
+                        grid: { color: 'rgba(255,255,255,0.1)' }
+                    }
+                }
+            }
+        });
+
+        // Socket event handlers
+        socket.on('connect', function() {
+            document.getElementById('connection-status').textContent = 'Connected';
+            document.getElementById('connection-status').style.color = '#4CAF50';
+        });
+
+        socket.on('disconnect', function() {
+            document.getElementById('connection-status').textContent = 'Disconnected';
+            document.getElementById('connection-status').style.color = '#f44336';
+        });
+
+        socket.on('metrics_update', function(metrics) {
+            document.getElementById('messages-processed').textContent = metrics.messages_processed || 0;
+            document.getElementById('success-rate').textContent = 
+                ((metrics.success_rate || 1) * 100).toFixed(1) + '%';
+            document.getElementById('processing-time').textContent = 
+                (metrics.avg_processing_time_ms || 0).toFixed(1) + 'ms';
+            document.getElementById('cpu-usage').textContent = 
+                (metrics.cpu_percent || 0).toFixed(1) + '%';
+            
+            // Update chart
+            const now = new Date().toLocaleTimeString();
+            chart.data.labels.push(now);
+            chart.data.datasets[0].data.push(metrics.messages_processed || 0);
+            
+            // Keep only last 20 data points
+            if (chart.data.labels.length > 20) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+            chart.update('none');
+        });
+
+        socket.on('engagement_update', function(engagementStats) {
+            const container = document.getElementById('engagement-posts');
+            
+            if (Object.keys(engagementStats).length === 0) {
+                container.innerHTML = `
+                    <div class="post-card">
+                        <div class="post-id">No engagement data yet...</div>
+                        <p style="opacity: 0.7; font-size: 12px; margin-top: 10px;">
+                            Waiting for engagement events from Kafka...
+                        </p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            
+            Object.entries(engagementStats).forEach(([postId, stats]) => {
+                const postCard = document.createElement('div');
+                postCard.className = 'post-card';
+                postCard.innerHTML = `
+                    <div class="post-id">Post: ${postId}</div>
+                    <div class="engagement-stats">
+                        <div class="engagement-item">
+                            <div class="engagement-count">${stats.likes}</div>
+                            <div class="engagement-label">Likes</div>
+                        </div>
+                        <div class="engagement-item">
+                            <div class="engagement-count">${stats.shares}</div>
+                            <div class="engagement-label">Shares</div>
+                        </div>
+                        <div class="engagement-item">
+                            <div class="engagement-count">${stats.comments}</div>
+                            <div class="engagement-label">Comments</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(postCard);
+            });
+        });
+
+        // Load initial data
+        fetch('/api/metrics')
+            .then(response => response.json())
+            .then(metrics => {
+                socket.emit('metrics_update', metrics);
+            });
+
+        fetch('/api/engagement-stats')
+            .then(response => response.json())
+            .then(stats => {
+                socket.emit('engagement_update', stats);
+            });
+    </script>
+</body>
+</html>
