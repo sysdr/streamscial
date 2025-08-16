@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>StreamSocial Consumer Group Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #2c3e50; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .metric-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .metric-value { font-size: 2em; font-weight: bold; color: #3498db; }
+        .consumer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        .consumer-card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 4px solid #27ae60; }
+        .chart-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>StreamSocial Consumer Group Dashboard</h1>
+            <p>Real-time monitoring of Kafka consumer group scaling</p>
+        </div>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3>Total Consumers</h3>
+                <div class="metric-value" id="total-consumers">0</div>
+            </div>
+            <div class="metric-card">
+                <h3>Messages Processed</h3>
+                <div class="metric-value" id="total-messages">0</div>
+            </div>
+            <div class="metric-card">
+                <h3>Processing Rate</h3>
+                <div class="metric-value" id="total-rate">0/sec</div>
+            </div>
+            <div class="metric-card">
+                <h3>Avg CPU Usage</h3>
+                <div class="metric-value" id="avg-cpu">0%</div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="throughputChart" width="400" height="200"></canvas>
+        </div>
+        
+        <h2>Consumer Instances</h2>
+        <div class="consumer-grid" id="consumer-grid">
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('throughputChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Messages/sec',
+                    data: [],
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Consumer Group Throughput'
+                    }
+                }
+            }
+        });
+
+        const ws = new WebSocket('ws://localhost:8000/ws');
+        
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            updateMetrics(data.summary);
+            updateConsumers(data.consumers);
+            updateChart(data.summary.total_rate);
+        };
+        
+        function updateMetrics(summary) {
+            document.getElementById('total-consumers').textContent = summary.total_consumers;
+            document.getElementById('total-messages').textContent = summary.total_messages.toLocaleString();
+            document.getElementById('total-rate').textContent = summary.total_rate.toFixed(1) + '/sec';
+            document.getElementById('avg-cpu').textContent = summary.avg_cpu.toFixed(1) + '%';
+        }
+        
+        function updateConsumers(consumers) {
+            const grid = document.getElementById('consumer-grid');
+            grid.innerHTML = '';
+            
+            Object.values(consumers).forEach(consumer => {
+                const card = document.createElement('div');
+                card.className = 'consumer-card';
+                card.innerHTML = `
+                    <h4>${consumer.consumer_id}</h4>
+                    <p><strong>Partitions:</strong> ${consumer.assigned_partitions.join(', ')}</p>
+                    <p><strong>Messages:</strong> ${consumer.messages_processed.toLocaleString()}</p>
+                    <p><strong>Rate:</strong> ${consumer.processing_rate.toFixed(1)}/sec</p>
+                    <p><strong>CPU:</strong> ${consumer.cpu_percent.toFixed(1)}%</p>
+                `;
+                grid.appendChild(card);
+            });
+        }
+        
+        function updateChart(rate) {
+            const now = new Date().toLocaleTimeString();
+            chart.data.labels.push(now);
+            chart.data.datasets[0].data.push(rate);
+            
+            if (chart.data.labels.length > 20) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+            
+            chart.update();
+        }
+    </script>
+</body>
+</html>
