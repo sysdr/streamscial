@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial Offset Management Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .metric-value { font-size: 2em; font-weight: bold; color: #667eea; }
+        .metric-label { color: #666; margin-top: 5px; }
+        .status-active { color: #4CAF50; font-weight: bold; }
+        .status-inactive { color: #f44336; font-weight: bold; }
+        .range-processing { background: #fff3cd; padding: 10px; border-radius: 5px; margin: 5px 0; }
+        .range-completed { background: #d4edda; padding: 10px; border-radius: 5px; margin: 5px 0; }
+        .range-failed { background: #f8d7da; padding: 10px; border-radius: 5px; margin: 5px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 StreamSocial Offset Management Dashboard</h1>
+            <p>Real-time monitoring of engagement analytics processing</p>
+        </div>
+        
+        <div class="grid">
+            <div class="card">
+                <h3>📊 Processing Overview</h3>
+                <div id="overview-content">
+                    <div class="metric-value" id="total-partitions">-</div>
+                    <div class="metric-label">Total Partitions</div>
+                    <div class="metric-value" id="active-ranges">-</div>
+                    <div class="metric-label">Active Processing Ranges</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>👥 Worker Status</h3>
+                <div id="workers-content">
+                    Loading workers...
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>📈 Engagement Metrics</h3>
+                <canvas id="metricsChart" width="400" height="200"></canvas>
+            </div>
+            
+            <div class="card">
+                <h3>⚡ Active Offset Ranges</h3>
+                <div id="ranges-content">
+                    Loading ranges...
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>📋 Partition Offsets</h3>
+                <div id="partitions-content">
+                    Loading partitions...
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>🔥 Recent Activity</h3>
+                <div id="activity-content">
+                    Loading activity...
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let metricsChart;
+        
+        const ws = new WebSocket(`ws://${window.location.host}/ws`);
+        
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            updateDashboard(data);
+        };
+        
+        function updateDashboard(data) {
+            // Update overview
+            document.getElementById('total-partitions').textContent = data.offsets.total_partitions;
+            document.getElementById('active-ranges').textContent = data.offsets.processing_ranges;
+            
+            // Update workers
+            const workersHtml = data.workers.map(worker => 
+                `<div>
+                    <strong>${worker.worker_id}</strong> 
+                    <span class="status-${worker.status}">${worker.status}</span>
+                    <br><small>Last heartbeat: ${new Date(worker.last_heartbeat * 1000).toLocaleTimeString()}</small>
+                </div>`
+            ).join('');
+            document.getElementById('workers-content').innerHTML = workersHtml || 'No active workers';
+            
+            // Update ranges
+            const rangesHtml = data.offsets.active_ranges.map(range => 
+                `<div class="range-${range.status}">
+                    <strong>Partition ${range.partition}</strong> | 
+                    Offsets: ${range.start_offset}-${range.end_offset} | 
+                    Worker: ${range.worker_id} | 
+                    Status: ${range.status}
+                </div>`
+            ).join('');
+            document.getElementById('ranges-content').innerHTML = rangesHtml || 'No active ranges';
+            
+            // Update partitions table
+            const partitionsHtml = `
+                <table>
+                    <tr><th>Partition</th><th>Committed Offset</th><th>Last Update</th></tr>
+                    ${data.offsets.partitions.map(p => 
+                        `<tr><td>${p.partition_id}</td><td>${p.committed_offset}</td><td>${new Date(p.updated_at).toLocaleString()}</td></tr>`
+                    ).join('')}
+                </table>
+            `;
+            document.getElementById('partitions-content').innerHTML = partitionsHtml;
+            
+            // Update activity
+            const activityHtml = data.metrics.recent_activity.map(activity => 
+                `<div>
+                    <strong>${activity.metric_type}</strong>: ${activity.events} events
+                    <br><small>Last: ${new Date(activity.last_update).toLocaleTimeString()}</small>
+                </div>`
+            ).join('');
+            document.getElementById('activity-content').innerHTML = activityHtml || 'No recent activity';
+            
+            // Update metrics chart
+            updateMetricsChart(data.metrics.summary);
+        }
+        
+        function updateMetricsChart(metrics) {
+            const ctx = document.getElementById('metricsChart').getContext('2d');
+            
+            if (metricsChart) {
+                metricsChart.destroy();
+            }
+            
+            metricsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: metrics.map(m => m.metric_type),
+                    datasets: [{
+                        label: 'Total Value',
+                        data: metrics.map(m => m.total_value),
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+        
+        // Initial load
+        fetch('/api/status')
+            .then(response => response.json())
+            .then(data => updateDashboard(data));
+    </script>
+</body>
+</html>
