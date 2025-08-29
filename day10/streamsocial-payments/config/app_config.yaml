@@ -1,0 +1,20 @@
+kafka:
+  bootstrap_servers: "localhost:9092"
+  enable_idempotence: true
+  isolation_level: "read_committed"
+  max_poll_records: 100
+  
+payment:
+  max_retry_attempts: 3
+  timeout_seconds: 30
+  idempotency_ttl_hours: 24
+  
+topics:
+  payment_events: "payment-events"
+  payment_analytics: "payment-analytics"
+  user_updates: "user-updates"
+  dead_letter: "payment-dlq"
+
+monitoring:
+  metrics_port: 8080
+  health_check_port: 8081

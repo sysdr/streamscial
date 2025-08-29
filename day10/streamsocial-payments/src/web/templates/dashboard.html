@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial Payment Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f7fa; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; text-align: center; }
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; }
+        .stat-value { font-size: 2.5rem; font-weight: bold; color: #667eea; }
+        .stat-label { color: #64748b; margin-top: 0.5rem; }
+        .payment-form { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { margin-bottom: 0.5rem; font-weight: 500; color: #374151; }
+        .form-group input, .form-group select { padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1rem; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; }
+        .btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 0.75rem 2rem; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: transform 0.2s; }
+        .btn:hover { transform: translateY(-2px); }
+        .recent-payments { background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; }
+        .recent-payments h3 { padding: 1.5rem; background: #f8fafc; border-bottom: 1px solid #e5e7eb; }
+        .payment-item { padding: 1rem 1.5rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: between; align-items: center; }
+        .payment-info { flex: 1; }
+        .payment-status { padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.875rem; font-weight: 500; }
+        .status-completed { background: #dcfce7; color: #166534; }
+        .status-processing { background: #fef3c7; color: #92400e; }
+        .status-failed { background: #fee2e2; color: #dc2626; }
+        .status-initiated { background: #dbeafe; color: #1e40af; }
+        .loading { display: none; }
+        .no-payments { padding: 2rem; text-align: center; color: #64748b; }
+        .no-payments p { font-size: 1.1rem; }
+        .error-banner { background: #fee2e2; border: 1px solid #fecaca; color: #dc2626; padding: 1rem; margin: 1rem; border-radius: 8px; text-align: center; }
+        .error-banner p { margin: 0; font-weight: 500; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>StreamSocial Payment Dashboard</h1>
+        <p>Exactly-Once Payment Processing with Kafka</p>
+    </div>
+    
+    {% if error %}
+    <div class="error-banner">
+        <p><strong>⚠️ Service Alert:</strong> {{ error }}</p>
+    </div>
+    {% endif %}
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_payments }}</div>
+                <div class="stat-label">Total Payments</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.success_rate }}%</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">${{ "%.2f"|format(stats.total_amount) }}</div>
+                <div class="stat-label">Total Revenue</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.successful_payments }}</div>
+                <div class="stat-label">Successful</div>
+            </div>
+        </div>
+
+        <div class="payment-form">
+            <h3>Create New Payment</h3>
+            <form id="paymentForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="user_id">User ID</label>
+                        <input type="text" id="user_id" name="user_id" value="user_{{ range(1000, 9999) | random }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">Amount ($)</label>
+                        <input type="number" id="amount" name="amount" value="9.99" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="payment_method">Payment Method</label>
+                        <select id="payment_method" name="payment_method" required>
+                            <option value="credit_card">Credit Card</option>
+                            <option value="paypal">PayPal</option>
+                            <option value="apple_pay">Apple Pay</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="subscription_type">Subscription</label>
+                        <select id="subscription_type" name="subscription_type" required>
+                            <option value="premium">Premium</option>
+                            <option value="pro">Pro</option>
+                            <option value="enterprise">Enterprise</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn">Process Payment</button>
+                <div class="loading" id="loading">Processing payment...</div>
+            </form>
+        </div>
+
+        <div class="recent-payments">
+            <h3>Recent Payments</h3>
+            <div id="paymentList">
+                {% if recent_payments %}
+                    {% for payment in recent_payments %}
+                    <div class="payment-item">
+                        <div class="payment-info">
+                            <strong>{{ payment.user_id }}</strong> - ${{ "%.2f"|format(payment.amount) }}
+                            <br><small>{{ payment.subscription_type or 'N/A' }} via {{ payment.payment_method }}</small>
+                        </div>
+                        <div class="payment-status status-{{ payment.status }}">{{ payment.status.title() }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no-payments">
+                        <p>No payments yet. Create your first payment above!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('paymentForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loading = document.getElementById('loading');
+            const btn = this.querySelector('.btn');
+            
+            loading.style.display = 'block';
+            btn.disabled = true;
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            data.amount = parseFloat(data.amount);
+            
+            try {
+                const response = await fetch('/api/payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`Payment created successfully! ID: ${result.payment_id}`);
+                    location.reload();
+                } else {
+                    alert('Payment failed: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+                btn.disabled = false;
+            }
+        });
+        
+        // Auto-refresh stats every 5 seconds
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                document.querySelector('.stat-value').textContent = stats.total_payments;
+                document.querySelectorAll('.stat-value')[1].textContent = stats.success_rate + '%';
+                document.querySelectorAll('.stat-value')[2].textContent = '$' + stats.total_amount.toFixed(2);
+                document.querySelectorAll('.stat-value')[3].textContent = stats.successful_payments;
+            } catch (error) {
+                console.error('Failed to refresh stats:', error);
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
