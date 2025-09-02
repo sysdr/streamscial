@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial Retry Logic Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .metric-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 15px;
+        }
+        
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4a90e2;
+        }
+        
+        .metric-subtitle {
+            font-size: 0.9rem;
+            color: #777;
+            margin-top: 5px;
+        }
+        
+        .controls {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .control-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(74, 144, 226, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        
+        .btn-danger:hover {
+            box-shadow: 0 4px 16px rgba(231, 76, 60, 0.4);
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-healthy { background: #2ecc71; }
+        .status-warning { background: #f39c12; }
+        .status-error { background: #e74c3c; }
+        
+        .circuit-breaker-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .circuit-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border-left: 4px solid #4a90e2;
+        }
+        
+        .circuit-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .log-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            word-break: break-all;
+        }
+        
+        .log-success { color: #2ecc71; }
+        .log-warning { color: #f39c12; }
+        .log-error { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 StreamSocial Retry Logic Dashboard</h1>
+            <p>Monitor producer reliability and circuit breaker performance</p>
+        </div>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-title">Total Attempts</div>
+                <div class="metric-value" id="total-attempts">0</div>
+                <div class="metric-subtitle">Messages processed</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Success Rate</div>
+                <div class="metric-value" id="success-rate">100%</div>
+                <div class="metric-subtitle">Successful deliveries</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Avg Backoff Time</div>
+                <div class="metric-value" id="avg-backoff">0ms</div>
+                <div class="metric-subtitle">Retry delay average</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-title">Circuit Breaker Trips</div>
+                <div class="metric-value" id="cb-trips">0</div>
+                <div class="metric-subtitle">Protective activations</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <h3>Test Controls</h3>
+            <div class="control-group">
+                <button class="btn" onclick="sendTestMessage()">📤 Send Test Post</button>
+                <button class="btn" onclick="sendTestStory()">📸 Send Test Story</button>
+                <button class="btn btn-danger" onclick="simulateFailure()">⚡ Simulate Network Failure</button>
+            </div>
+            
+            <div id="circuit-breakers">
+                <h4>Circuit Breaker Status</h4>
+                <div class="circuit-breaker-grid" id="cb-grid">
+                    <!-- Circuit breaker status will be populated here -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container">
+            <h3>Live Activity Log</h3>
+            <div id="activity-log">
+                <div class="log-entry">Dashboard initialized - monitoring retry logic...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let logCount = 0;
+        const maxLogEntries = 50;
+        
+        function addLogEntry(message, type = 'info') {
+            const log = document.getElementById('activity-log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            
+            log.insertBefore(entry, log.firstChild);
+            
+            // Limit log entries
+            if (log.children.length > maxLogEntries) {
+                log.removeChild(log.lastChild);
+            }
+        }
+        
+        function updateMetrics() {
+            fetch('/api/metrics')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-attempts').textContent = data.total_attempts || 0;
+                    
+                    const successRate = data.total_attempts > 0 
+                        ? ((data.successful_retries / data.total_attempts) * 100).toFixed(1)
+                        : 100;
+                    document.getElementById('success-rate').textContent = successRate + '%';
+                    
+                    document.getElementById('avg-backoff').textContent = 
+                        Math.round((data.average_backoff_time || 0) * 1000) + 'ms';
+                    
+                    document.getElementById('cb-trips').textContent = data.circuit_breaker_trips || 0;
+                    
+                    // Update circuit breaker status
+                    updateCircuitBreakerStatus(data.circuit_breakers || {});
+                })
+                .catch(error => {
+                    addLogEntry(`Error fetching metrics: ${error}`, 'error');
+                });
+        }
+        
+        function updateCircuitBreakerStatus(circuitBreakers) {
+            const grid = document.getElementById('cb-grid');
+            grid.innerHTML = '';
+            
+            if (Object.keys(circuitBreakers).length === 0) {
+                grid.innerHTML = '<div class="circuit-card">No active circuit breakers</div>';
+                return;
+            }
+            
+            Object.entries(circuitBreakers).forEach(([topic, status]) => {
+                const card = document.createElement('div');
+                card.className = 'circuit-card';
+                
+                const statusClass = status.state === 'closed' ? 'healthy' : 
+                                  status.state === 'half_open' ? 'warning' : 'error';
+                
+                card.innerHTML = `
+                    <div class="circuit-title">
+                        <span class="status-indicator status-${statusClass}"></span>
+                        ${topic}
+                    </div>
+                    <div>State: ${status.state.toUpperCase()}</div>
+                    <div>Failures: ${status.failure_count}</div>
+                    <div>Successes: ${status.success_count}</div>
+                `;
+                
+                grid.appendChild(card);
+            });
+        }
+        
+        function sendTestMessage() {
+            addLogEntry('Sending test post message...', 'info');
+            
+            fetch('/api/send_test_message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'post', topic: 'streamsocial-posts' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const type = data.success ? 'success' : 'error';
+                addLogEntry(data.message, type);
+            })
+            .catch(error => {
+                addLogEntry(`Error sending test message: ${error}`, 'error');
+            });
+        }
+        
+        function sendTestStory() {
+            addLogEntry('Sending test story message...', 'info');
+            
+            fetch('/api/send_test_message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'story', topic: 'streamsocial-stories' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const type = data.success ? 'success' : 'error';
+                addLogEntry(data.message, type);
+            })
+            .catch(error => {
+                addLogEntry(`Error sending test story: ${error}`, 'error');
+            });
+        }
+        
+        function simulateFailure() {
+            addLogEntry('Simulating network failure...', 'warning');
+            
+            fetch('/api/simulate_failure', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                addLogEntry('Network failure simulation activated', 'warning');
+            })
+            .catch(error => {
+                addLogEntry(`Error simulating failure: ${error}`, 'error');
+            });
+        }
+        
+        // Update metrics every 2 seconds
+        setInterval(updateMetrics, 2000);
+        updateMetrics(); // Initial load
+    </script>
+</body>
+</html>
