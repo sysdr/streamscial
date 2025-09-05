@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; text-align: center; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; }
+        .card { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .card h3 { color: #2d3748; margin-bottom: 1rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: #4a5568; font-weight: 500; }
+        .form-control { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 1rem; }
+        .btn { padding: 0.75rem 1.5rem; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; transition: background 0.3s; }
+        .btn:hover { background: #5a67d8; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
+        .stat-item { text-align: center; padding: 1rem; background: #f7fafc; border-radius: 8px; }
+        .stat-value { font-size: 2rem; font-weight: bold; color: #2d3748; }
+        .stat-label { color: #718096; font-size: 0.875rem; margin-top: 0.25rem; }
+        .timeline-item { padding: 1rem; border-left: 3px solid #667eea; margin-bottom: 1rem; background: #f7fafc; border-radius: 0 8px 8px 0; }
+        .timeline-item .user { font-weight: bold; color: #2d3748; }
+        .timeline-item .content { margin: 0.5rem 0; color: #4a5568; }
+        .timeline-item .meta { font-size: 0.875rem; color: #718096; }
+        .status-indicator { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 0.5rem; }
+        .status-success { background: #48bb78; }
+        .status-warning { background: #ed8936; }
+        .status-error { background: #f56565; }
+        .chart-container { position: relative; height: 300px; margin-top: 1rem; }
+        .live-indicator { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 {{ title }}</h1>
+        <p>Real-time Kafka Message Ordering & Partition Analysis</p>
+        <div class="live-indicator">
+            <span class="status-indicator status-success"></span>
+            <span id="connection-status">Live Connection Active</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="grid">
+            <!-- Message Sender -->
+            <div class="card">
+                <h3>📝 Send Timeline Message</h3>
+                <div class="form-group">
+                    <label for="user-id">User ID:</label>
+                    <input type="text" id="user-id" class="form-control" placeholder="user123" value="alice">
+                </div>
+                <div class="form-group">
+                    <label for="post-content">Post Content:</label>
+                    <textarea id="post-content" class="form-control" rows="3" placeholder="What's happening?">Just posted a new photo!</textarea>
+                </div>
+                <button onclick="sendMessage()" class="btn">Send Message</button>
+                <div id="send-result" style="margin-top: 1rem;"></div>
+            </div>
+
+            <!-- System Statistics -->
+            <div class="card">
+                <h3>📊 System Statistics</h3>
+                <div class="stats-grid" id="system-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-sent">0</div>
+                        <div class="stat-label">Messages Sent</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-consumed">0</div>
+                        <div class="stat-label">Messages Consumed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="unique-users">0</div>
+                        <div class="stat-label">Active Users</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="partitions-used">0</div>
+                        <div class="stat-label">Partitions Used</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Timeline -->
+            <div class="card">
+                <h3>👤 User Timeline</h3>
+                <div class="form-group">
+                    <label for="timeline-user">User ID:</label>
+                    <input type="text" id="timeline-user" class="form-control" placeholder="alice" value="alice">
+                    <button onclick="loadTimeline()" class="btn" style="margin-top: 0.5rem;">Load Timeline</button>
+                </div>
+                <div id="user-timeline"></div>
+            </div>
+
+            <!-- Partition Analysis -->
+            <div class="card">
+                <h3>🔍 Partition Analysis</h3>
+                <button onclick="analyzePartitions()" class="btn">Analyze Distribution</button>
+                <div class="chart-container">
+                    <canvas id="partition-chart"></canvas>
+                </div>
+                <div id="partition-analysis"></div>
+            </div>
+
+            <!-- Ordering Verification -->
+            <div class="card">
+                <h3>✅ Ordering Verification</h3>
+                <button onclick="verifyOrdering()" class="btn">Verify Message Order</button>
+                <div id="ordering-results" style="margin-top: 1rem;"></div>
+            </div>
+
+            <!-- Live Updates -->
+            <div class="card">
+                <h3>📡 Live Updates</h3>
+                <div id="live-updates" style="max-height: 300px; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let partitionChart = null;
+        let socket = null;
+
+        // Initialize WebSocket connection
+        function initWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            socket = new WebSocket(`${protocol}//${window.location.host}/ws/live-updates`);
+            
+            socket.onopen = function() {
+                document.getElementById('connection-status').textContent = 'Live Connection Active';
+            };
+            
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                handleLiveUpdate(data);
+            };
+            
+            socket.onclose = function() {
+                document.getElementById('connection-status').textContent = 'Connection Closed';
+                setTimeout(initWebSocket, 5000); // Reconnect after 5 seconds
+            };
+        }
+
+        async function sendMessage() {
+            const userId = document.getElementById('user-id').value;
+            const content = document.getElementById('post-content').value;
+            
+            if (!userId || !content) {
+                alert('Please fill in both User ID and content');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/send-message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, content: content })
+                });
+                
+                const result = await response.json();
+                
+                const resultDiv = document.getElementById('send-result');
+                if (result.success) {
+                    resultDiv.innerHTML = `
+                        <div style="color: green; padding: 0.5rem; background: #f0fff4; border-radius: 4px;">
+                            ✅ Message sent successfully!<br>
+                            Partition: ${result.target_partition}<br>
+                            Key: ${result.partition_key}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div style="color: red; padding: 0.5rem; background: #fff5f5; border-radius: 4px;">
+                            ❌ Failed to send message: ${result.error}
+                        </div>
+                    `;
+                }
+                
+                // Refresh stats
+                setTimeout(loadSystemStats, 1000);
+                
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('Error sending message: ' + error.message);
+            }
+        }
+
+        async function loadTimeline() {
+            const userId = document.getElementById('timeline-user').value;
+            
+            if (!userId) {
+                alert('Please enter a User ID');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/user-timeline/${userId}`);
+                const data = await response.json();
+                
+                const timelineDiv = document.getElementById('user-timeline');
+                
+                if (data.timeline && data.timeline.length > 0) {
+                    timelineDiv.innerHTML = `
+                        <div style="margin-bottom: 1rem;">
+                            <strong>Timeline for ${data.user_id}</strong> (${data.message_count} messages)<br>
+                            <small>Partition: ${data.partition_info.target_partition} | Key: ${data.partition_info.partition_key}</small>
+                        </div>
+                        ${data.timeline.map(msg => `
+                            <div class="timeline-item">
+                                <div class="user">User: ${msg.user_id}</div>
+                                <div class="content">${msg.content}</div>
+                                <div class="meta">
+                                    ${new Date(msg.created_at).toLocaleString()} | 
+                                    Partition: ${msg.partition} | 
+                                    Offset: ${msg.offset}
+                                </div>
+                            </div>
+                        `).join('')}
+                    `;
+                } else {
+                    timelineDiv.innerHTML = `<p>No messages found for user: ${userId}</p>`;
+                }
+            } catch (error) {
+                console.error('Error loading timeline:', error);
+                alert('Error loading timeline: ' + error.message);
+            }
+        }
+
+        async function analyzePartitions() {
+            try {
+                const response = await fetch('/api/partition-analysis');
+                const data = await response.json();
+                
+                if (data.message) {
+                    document.getElementById('partition-analysis').innerHTML = `<p>${data.message}</p>`;
+                    return;
+                }
+                
+                // Create partition distribution chart
+                createPartitionChart(data.key_distribution);
+                
+                // Show analysis results
+                const analysisDiv = document.getElementById('partition-analysis');
+                analysisDiv.innerHTML = `
+                    <div style="margin-top: 1rem;">
+                        <h4>Distribution Analysis</h4>
+                        <p><strong>Load Balance Score:</strong> ${(data.key_distribution.load_balance_score * 100).toFixed(1)}%</p>
+                        <p><strong>Total Keys:</strong> ${data.key_distribution.total_keys}</p>
+                        <p><strong>Partitions Used:</strong> ${Object.keys(data.key_distribution.partition_counts).length}</p>
+                        
+                        ${data.optimization_suggestions.length > 0 ? `
+                            <h4>Optimization Suggestions:</h4>
+                            <ul>
+                                ${data.optimization_suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+                            </ul>
+                        ` : '<p>✅ Partition distribution looks good!</p>'}
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error analyzing partitions:', error);
+                alert('Error analyzing partitions: ' + error.message);
+            }
+        }
+
+        function createPartitionChart(distributionData) {
+            const ctx = document.getElementById('partition-chart');
+            
+            if (partitionChart) {
+                partitionChart.destroy();
+            }
+            
+            const partitionCounts = distributionData.partition_counts;
+            const labels = Object.keys(partitionCounts).map(p => `Partition ${p}`);
+            const data = Object.values(partitionCounts);
+            
+            partitionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Messages per Partition',
+                        data: data,
+                        backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Message Count'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function verifyOrdering() {
+            try {
+                const response = await fetch('/api/ordering-verification');
+                const data = await response.json();
+                
+                const resultsDiv = document.getElementById('ordering-results');
+                const results = data.verification_results;
+                
+                resultsDiv.innerHTML = `
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value">${results.total_users}</div>
+                            <div class="stat-label">Total Users</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${results.total_messages}</div>
+                            <div class="stat-label">Total Messages</div>
+                        </div>
+                        <div class="stat-item ${results.ordering_violations > 0 ? 'status-error' : 'status-success'}">
+                            <div class="stat-value">${results.ordering_violations}</div>
+                            <div class="stat-label">Ordering Violations</div>
+                        </div>
+                    </div>
+                    
+                    ${results.ordering_violations > 0 ? `
+                        <div style="margin-top: 1rem; padding: 1rem; background: #fff5f5; border-radius: 8px; border-left: 4px solid #f56565;">
+                            <h4>⚠️ Ordering Violations Detected</h4>
+                            ${results.user_violations.map(violation => `
+                                <p><strong>User:</strong> ${violation.user_id} - ${violation.violations} violations in ${violation.message_count} messages</p>
+                            `).join('')}
+                        </div>
+                    ` : `
+                        <div style="margin-top: 1rem; padding: 1rem; background: #f0fff4; border-radius: 8px; border-left: 4px solid #48bb78;">
+                            <h4>✅ All Messages in Correct Order</h4>
+                            <p>Timeline ordering is consistent across all users!</p>
+                        </div>
+                    `}
+                    
+                    <p style="margin-top: 1rem; font-size: 0.875rem; color: #718096;">
+                        Last verified: ${new Date(data.timestamp).toLocaleString()}
+                    </p>
+                `;
+            } catch (error) {
+                console.error('Error verifying ordering:', error);
+                alert('Error verifying ordering: ' + error.message);
+            }
+        }
+
+        async function loadSystemStats() {
+            try {
+                const response = await fetch('/api/system-stats');
+                const data = await response.json();
+                
+                document.getElementById('total-sent').textContent = data.producer_stats.total_sent;
+                document.getElementById('total-consumed').textContent = data.consumer_stats.total_consumed;
+                document.getElementById('unique-users').textContent = data.consumer_stats.unique_users;
+                document.getElementById('partitions-used').textContent = Object.keys(data.consumer_stats.partition_distribution).length;
+                
+            } catch (error) {
+                console.error('Error loading system stats:', error);
+            }
+        }
+
+        function handleLiveUpdate(data) {
+            if (data.type === 'message_update') {
+                const liveDiv = document.getElementById('live-updates');
+                const updateHtml = `
+                    <div style="padding: 0.5rem; margin-bottom: 0.5rem; background: #f7fafc; border-radius: 4px; border-left: 3px solid #667eea;">
+                        <div style="font-size: 0.875rem;">
+                            📨 ${data.stats.messages_consumed} new messages from ${data.stats.users_updated} users
+                        </div>
+                        <div style="font-size: 0.75rem; color: #718096;">
+                            ${new Date(data.timestamp).toLocaleTimeString()}
+                        </div>
+                    </div>
+                `;
+                liveDiv.innerHTML = updateHtml + liveDiv.innerHTML;
+                
+                // Keep only last 10 updates
+                const updates = liveDiv.children;
+                while (updates.length > 10) {
+                    liveDiv.removeChild(updates[updates.length - 1]);
+                }
+                
+                // Refresh stats
+                loadSystemStats();
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initWebSocket();
+            loadSystemStats();
+            
+            // Auto-refresh stats every 10 seconds
+            setInterval(loadSystemStats, 10000);
+        });
+    </script>
+</body>
+</html>
