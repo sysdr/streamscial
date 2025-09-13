@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial Compression Lab</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.32.0/plotly.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        .metric-card { transition: all 0.3s ease; }
+        .metric-card:hover { transform: translateY(-2px); }
+        .algorithm-result { border-left: 4px solid #3B82F6; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto px-4 py-6">
+        <div class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">StreamSocial Compression Lab</h1>
+            <p class="text-gray-600">Day 17: Real-time compression analysis and performance monitoring</p>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">Benchmark Configuration</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Data Type</label>
+                    <select id="dataType" class="w-full p-2 border border-gray-300 rounded-md">
+                        <option value="user_profile">User Profiles</option>
+                        <option value="post_metadata">Post Metadata</option>
+                        <option value="timeline_update">Timeline Updates</option>
+                        <option value="mixed">Mixed Data</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Data Size</label>
+                    <select id="dataSize" class="w-full p-2 border border-gray-300 rounded-md">
+                        <option value="100">100 records</option>
+                        <option value="1000" selected>1,000 records</option>
+                        <option value="5000">5,000 records</option>
+                        <option value="10000">10,000 records</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Iterations</label>
+                    <select id="iterations" class="w-full p-2 border border-gray-300 rounded-md">
+                        <option value="10">10</option>
+                        <option value="50">50</option>
+                        <option value="100" selected>100</option>
+                        <option value="500">500</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button id="runBenchmark" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">
+                        Run Benchmark
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow-lg p-4 metric-card">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">CPU Usage</h3>
+                <div id="cpuUsage" class="text-3xl font-bold text-blue-600">0%</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-lg p-4 metric-card">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Memory Usage</h3>
+                <div id="memoryUsage" class="text-3xl font-bold text-green-600">0%</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-lg p-4 metric-card">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Network I/O</h3>
+                <div id="networkIO" class="text-3xl font-bold text-purple-600">0 MB/s</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-lg p-4 metric-card">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">Disk Usage</h3>
+                <div id="diskUsage" class="text-3xl font-bold text-orange-600">0%</div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-2xl font-semibold mb-4">Benchmark Results</h2>
+            <div id="loadingIndicator" class="hidden text-center py-8">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p class="mt-2 text-gray-600">Running compression benchmark...</p>
+            </div>
+            <div id="resultsContainer" class="hidden">
+                <div id="insightsPanel" class="bg-blue-50 p-4 rounded-lg mb-4"></div>
+                <div id="algorithmResults" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Compression Ratio Comparison</h2>
+                <div id="compressionChart" style="height: 400px;"></div>
+            </div>
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Performance Metrics</h2>
+                <div id="performanceChart" style="height: 400px;"></div>
+            </div>
+        </div>
+
+        <!-- Real-time Test -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mt-6">
+            <h2 class="text-2xl font-semibold mb-4">Real-time Compression Test</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Input Data</label>
+                    <textarea id="testData" class="w-full p-3 border border-gray-300 rounded-md" rows="6" 
+                              placeholder="Enter your test data here...">{"user_id": 12345, "username": "streaming_dev", "posts": [{"id": 1, "content": "Building scalable systems with Kafka!", "likes": 42}]}</textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Algorithm</label>
+                    <select id="testAlgorithm" class="w-full p-2 border border-gray-300 rounded-md mb-4">
+                        <option value="gzip">GZIP</option>
+                        <option value="snappy" selected>Snappy</option>
+                        <option value="lz4">LZ4</option>
+                        <option value="zstd">ZSTD</option>
+                    </select>
+                    <button id="runRealtimeTest" 
+                            class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md mb-4">
+                        Test Compression
+                    </button>
+                    <div id="realtimeResults" class="text-sm space-y-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        
+        // Start continuous monitoring
+        socket.emit('start_continuous_monitoring');
+        
+        // Update metrics display
+        socket.on('metrics_update', function(data) {
+            document.getElementById('cpuUsage').textContent = `${data.cpu.cpu_percent.toFixed(1)}%`;
+            document.getElementById('memoryUsage').textContent = `${data.memory.percent.toFixed(1)}%`;
+            
+            const networkMBps = ((data.network.bytes_sent_per_sec + data.network.bytes_recv_per_sec) / 1024 / 1024).toFixed(2);
+            document.getElementById('networkIO').textContent = `${networkMBps} MB/s`;
+            document.getElementById('diskUsage').textContent = `${data.disk.percent.toFixed(1)}%`;
+        });
+        
+        // Run benchmark
+        document.getElementById('runBenchmark').addEventListener('click', async function() {
+            const dataType = document.getElementById('dataType').value;
+            const dataSize = document.getElementById('dataSize').value;
+            const iterations = document.getElementById('iterations').value;
+            
+            document.getElementById('loadingIndicator').classList.remove('hidden');
+            document.getElementById('resultsContainer').classList.add('hidden');
+            
+            try {
+                const response = await fetch('/api/benchmark', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({data_type: dataType, data_size: parseInt(dataSize), iterations: parseInt(iterations)})
+                });
+                
+                const results = await response.json();
+                displayResults(results);
+            } catch (error) {
+                console.error('Benchmark error:', error);
+                alert('Benchmark failed: ' + error.message);
+            } finally {
+                document.getElementById('loadingIndicator').classList.add('hidden');
+            }
+        });
+        
+        // Real-time test
+        document.getElementById('runRealtimeTest').addEventListener('click', async function() {
+            const data = document.getElementById('testData').value;
+            const algorithm = document.getElementById('testAlgorithm').value;
+            
+            try {
+                const response = await fetch('/api/realtime-test', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({data: data, algorithm: algorithm})
+                });
+                
+                const result = await response.json();
+                displayRealtimeResults(result);
+            } catch (error) {
+                console.error('Real-time test error:', error);
+            }
+        });
+        
+        function displayResults(results) {
+            // Display insights
+            const insightsPanel = document.getElementById('insightsPanel');
+            insightsPanel.innerHTML = '<h3 class="font-semibold mb-2">Key Insights:</h3>';
+            if (results.insights) {
+                Object.values(results.insights).forEach(insight => {
+                    insightsPanel.innerHTML += `<p class="text-sm text-gray-700 mb-1">• ${insight}</p>`;
+                });
+            }
+            
+            // Display algorithm results
+            const container = document.getElementById('algorithmResults');
+            container.innerHTML = '';
+            
+            const algorithms = ['gzip', 'snappy', 'lz4', 'zstd'];
+            algorithms.forEach(algo => {
+                if (results[algo] && !results[algo].error) {
+                    const result = results[algo];
+                    container.innerHTML += `
+                        <div class="algorithm-result bg-gray-50 p-4 rounded-lg">
+                            <h3 class="font-semibold text-lg mb-2">${algo.toUpperCase()}</h3>
+                            <div class="grid grid-cols-2 gap-2 text-sm">
+                                <div>Compression: <span class="font-semibold">${result.compression_ratio.toFixed(2)}x</span></div>
+                                <div>Space Saved: <span class="font-semibold">${result.space_savings_percent.toFixed(1)}%</span></div>
+                                <div>Compress Time: <span class="font-semibold">${result.compression_time_ms.mean.toFixed(2)}ms</span></div>
+                                <div>Decompress Time: <span class="font-semibold">${result.decompression_time_ms.mean.toFixed(2)}ms</span></div>
+                                <div>Throughput: <span class="font-semibold">${result.throughput_mb_per_sec.toFixed(2)} MB/s</span></div>
+                                <div>CPU Impact: <span class="font-semibold">${result.cpu_usage_delta.toFixed(1)}%</span></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            createCharts(results);
+            document.getElementById('resultsContainer').classList.remove('hidden');
+        }
+        
+        function displayRealtimeResults(result) {
+            const container = document.getElementById('realtimeResults');
+            container.innerHTML = `
+                <div class="space-y-1">
+                    <div><strong>Original Size:</strong> ${result.original_size} bytes</div>
+                    <div><strong>Compressed Size:</strong> ${result.compressed_size} bytes</div>
+                    <div><strong>Compression Ratio:</strong> ${result.compression_ratio.toFixed(2)}x</div>
+                    <div><strong>Compression Time:</strong> ${result.compression_time_ms.toFixed(2)} ms</div>
+                    <div><strong>Decompression Time:</strong> ${result.decompression_time_ms.toFixed(2)} ms</div>
+                    <div><strong>Data Integrity:</strong> ${result.verified ? '✅ Verified' : '❌ Failed'}</div>
+                </div>
+            `;
+        }
+        
+        function createCharts(results) {
+            const algorithms = ['gzip', 'snappy', 'lz4', 'zstd'];
+            const validResults = algorithms.filter(algo => results[algo] && !results[algo].error);
+            
+            // Compression ratio chart
+            const ratioTrace = {
+                x: validResults,
+                y: validResults.map(algo => results[algo].compression_ratio),
+                type: 'bar',
+                name: 'Compression Ratio',
+                marker: {color: '#3B82F6'}
+            };
+            
+            Plotly.newPlot('compressionChart', [ratioTrace], {
+                title: 'Compression Ratios',
+                xaxis: {title: 'Algorithm'},
+                yaxis: {title: 'Compression Ratio (x)'}
+            });
+            
+            // Performance chart
+            const speedTrace = {
+                x: validResults,
+                y: validResults.map(algo => results[algo].compression_time_ms.mean),
+                type: 'bar',
+                name: 'Compression Time (ms)',
+                marker: {color: '#10B981'}
+            };
+            
+            Plotly.newPlot('performanceChart', [speedTrace], {
+                title: 'Compression Speed',
+                xaxis: {title: 'Algorithm'},
+                yaxis: {title: 'Time (ms)'}
+            });
+        }
+    </script>
+</body>
+</html>
