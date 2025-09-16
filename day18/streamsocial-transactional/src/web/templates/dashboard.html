@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial - Transactional Producers Dashboard</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🚀 StreamSocial Transactional Producers</h1>
+            <p class="subtitle">Day 18: Atomic Operations Across Kafka Topics</p>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Post Creation Form -->
+            <div class="card">
+                <h3>✍️ Create Post</h3>
+                <form id="postForm">
+                    <div class="form-group">
+                        <label for="userId">Select User:</label>
+                        <select id="userId" required>
+                            <option value="">Choose a user...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="content">Post Content:</label>
+                        <textarea id="content" placeholder="What's happening?" maxlength="280" required></textarea>
+                        <div class="char-counter">
+                            <span id="charCount">0</span>/280
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="hashtags">Hashtags (comma-separated):</label>
+                        <input type="text" id="hashtags" placeholder="#kafka #systemdesign #atomic">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        🚀 Post Atomically
+                    </button>
+                </form>
+            </div>
+
+            <!-- Follower Sync Feature -->
+            <div class="card">
+                <h3>👥 Follower Timeline Sync</h3>
+                <form id="followerSyncForm">
+                    <div class="form-group">
+                        <label for="syncUserId">Select User:</label>
+                        <select id="syncUserId" required>
+                            <option value="">Choose a user...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="syncContent">Sync Content:</label>
+                        <textarea id="syncContent" placeholder="Content to sync across followers..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Target Followers:</label>
+                        <div id="followersList" class="followers-list"></div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-secondary">
+                        ⚡ Sync Timelines Atomically  
+                    </button>
+                </form>
+            </div>
+
+            <!-- Real-time Activity -->
+            <div class="card">
+                <h3>📊 Real-time Activity</h3>
+                <div id="activityFeed" class="activity-feed">
+                    <div class="activity-item info">
+                        <span class="timestamp">System ready</span>
+                        <span class="message">Transactional producer initialized</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Metrics -->
+            <div class="card">
+                <h3>📈 Transaction Metrics</h3>
+                <div class="metrics-grid">
+                    <div class="metric">
+                        <div class="metric-value" id="totalTransactions">0</div>
+                        <div class="metric-label">Total Transactions</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="successRate">100%</div>
+                        <div class="metric-label">Success Rate</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value" id="avgLatency">0ms</div>
+                        <div class="metric-label">Avg Latency</div>
+                    </div>
+                </div>
+                
+                <button id="refreshMetrics" class="btn btn-outline">
+                    🔄 Refresh Metrics
+                </button>
+                
+                <button id="consumeMessages" class="btn btn-outline">
+                    📥 Consume Messages  
+                </button>
+            </div>
+
+            <!-- Transaction Log -->
+            <div class="card full-width">
+                <h3>📝 Transaction Log</h3>
+                <div id="transactionLog" class="transaction-log">
+                    <div class="log-entry">
+                        <span class="log-time">Ready</span>
+                        <span class="log-level info">INFO</span>
+                        <span class="log-message">StreamSocial transactional producer ready for atomic operations</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
