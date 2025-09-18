@@ -1,0 +1,25 @@
+kafka:
+  servers:
+    - localhost:9092
+  topics:
+    content_moderation: content-moderation
+    timeline_updates: timeline-updates
+    dead_letter_queue: content-moderation-dlq
+  
+producer:
+  acks: 1
+  retries: 3
+  max_in_flight: 5
+  compression: snappy
+  batch_size: 32768
+  linger_ms: 10
+
+moderation:
+  priority_users:
+    - vip_alice
+    - vip_bob
+  risk_keywords:
+    - spam
+    - abuse
+    - hate
+    - violence
