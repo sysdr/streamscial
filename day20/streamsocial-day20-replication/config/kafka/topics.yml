@@ -1,0 +1,27 @@
+topics:
+  critical_posts:
+    partitions: 6
+    replication_factor: 5
+    config:
+      min.insync.replicas: 3
+      unclean.leader.election.enable: false
+      retention.ms: 86400000
+      compression.type: lz4
+  
+  user_engagement:
+    partitions: 12
+    replication_factor: 3
+    config:
+      min.insync.replicas: 2
+      unclean.leader.election.enable: false
+      retention.ms: 3600000
+      compression.type: snappy
+  
+  analytics_events:
+    partitions: 24
+    replication_factor: 3
+    config:
+      min.insync.replicas: 1
+      unclean.leader.election.enable: true
+      retention.ms: 1800000
+      compression.type: gzip

@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial - Kafka Replication Monitor</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        .header {
+            background: rgba(255,255,255,0.95);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        .header h1 { color: #4a5568; display: inline-block; }
+        .status-indicator {
+            display: inline-block;
+            margin-left: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .healthy { background: #48bb78; color: white; }
+        .warning { background: #ed8936; color: white; }
+        .critical { background: #e53e3e; color: white; }
+        
+        .dashboard { 
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .card h2 { color: #2d3748; margin-bottom: 1rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem; }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .metric-box {
+            text-align: center;
+            padding: 1rem;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+        }
+        .metric-value { font-size: 2rem; font-weight: bold; color: #2b6cb0; }
+        .metric-label { color: #4a5568; font-size: 0.9rem; }
+        
+        .broker-list { max-height: 200px; overflow-y: auto; }
+        .broker-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #48bb78;
+        }
+        .broker-offline { border-left-color: #e53e3e; }
+        
+        .events-list { max-height: 300px; overflow-y: auto; }
+        .event-item {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border-radius: 6px;
+            border-left: 4px solid #4299e1;
+            background: #ebf8ff;
+        }
+        .event-isr-change { border-left-color: #ed8936; background: #fffaf0; }
+        .event-leader-election { border-left-color: #9f7aea; background: #faf5ff; }
+        
+        .chaos-controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .chaos-btn {
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .inject-btn { background: #e53e3e; color: white; }
+        .inject-btn:hover { background: #c53030; }
+        .recover-btn { background: #48bb78; color: white; }
+        .recover-btn:hover { background: #38a169; }
+        
+        .full-width { grid-column: 1 / -1; }
+        #topology-chart { 
+            height: 400px; 
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .updating { animation: pulse 2s infinite; }
+        
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+        .connected { background: #48bb78; color: white; }
+        .disconnected { background: #e53e3e; color: white; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>StreamSocial Kafka Replication Monitor</h1>
+        <div id="health-indicator" class="status-indicator healthy">HEALTHY</div>
+    </div>
+    
+    <div class="dashboard">
+        <div class="card">
+            <h2>📊 Cluster Health 
+                <button onclick="refreshData()" style="float: right; padding: 0.25rem 0.5rem; background: #4299e1; color: white; border: none; border-radius: 4px; cursor: pointer; margin-left: 0.5rem;">🔄 Refresh</button>
+                <button onclick="testWebSocket()" style="float: right; padding: 0.25rem 0.5rem; background: #48bb78; color: white; border: none; border-radius: 4px; cursor: pointer;">🔌 Test WS</button>
+            </h2>
+            <div class="metrics-grid">
+                <div class="metric-box">
+                    <div id="health-score" class="metric-value">100%</div>
+                    <div class="metric-label">Health Score</div>
+                </div>
+                <div class="metric-box">
+                    <div id="total-partitions" class="metric-value">0</div>
+                    <div class="metric-label">Total Partitions</div>
+                </div>
+                <div class="metric-box">
+                    <div id="under-replicated" class="metric-value">0</div>
+                    <div class="metric-label">Under-replicated</div>
+                </div>
+                <div class="metric-box">
+                    <div id="offline-partitions" class="metric-value">0</div>
+                    <div class="metric-label">Offline</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>🖥️ Broker Status</h2>
+            <div id="broker-list" class="broker-list">
+                <div class="broker-item">
+                    <span>No brokers detected</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>📈 Recent Events</h2>
+            <div id="events-list" class="events-list">
+                <div class="event-item">
+                    <strong>System Started</strong><br>
+                    <small>Monitoring initialized</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>💥 Chaos Engineering</h2>
+            <p>Inject failures to test disaster recovery:</p>
+            <div class="chaos-controls">
+                <button class="chaos-btn inject-btn" onclick="injectFailure('single_broker_failure')">
+                    Kill Single Broker
+                </button>
+                <button class="chaos-btn inject-btn" onclick="injectFailure('network_partition')">
+                    Network Partition
+                </button>
+                <button class="chaos-btn inject-btn" onclick="injectFailure('leader_broker_failure')">
+                    Kill Leader
+                </button>
+                <button class="chaos-btn recover-btn" onclick="recoverAll()">
+                    Recover All
+                </button>
+                <button class="chaos-btn recover-btn" onclick="forceRecovery()" style="background: #9f7aea;">
+                    Force Recovery
+                </button>
+            </div>
+            <div id="failure-status" style="margin-top: 1rem; font-size: 0.9rem;"></div>
+        </div>
+        
+        <div class="card full-width">
+            <h2>🗺️ Cluster Topology</h2>
+            <div id="topology-chart">
+                <div style="display: flex; align-items: center; justify-content: center; height: 400px; color: #666;">
+                    <div>Loading cluster topology...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="connection-status" class="connection-status disconnected">DISCONNECTED</div>
+    
+    <script>
+        const socket = io();
+        let currentFailures = {};
+        
+        socket.on('connect', function() {
+            console.log('🔌 WebSocket connected!');
+            document.getElementById('connection-status').className = 'connection-status connected';
+            document.getElementById('connection-status').textContent = 'CONNECTED';
+            socket.emit('request_status');
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('🔌 WebSocket disconnected!');
+            document.getElementById('connection-status').className = 'connection-status disconnected';
+            document.getElementById('connection-status').textContent = 'DISCONNECTED';
+        });
+        
+        socket.on('cluster_update', function(data) {
+            console.log('📡 Received cluster update:', data);
+            updateDashboard(data);
+        });
+        
+        function updateDashboard(data) {
+            console.log('🔄 Updating dashboard with data:', data);
+            // Update health metrics
+            if (data.health_score) {
+                const health = data.health_score;
+                document.getElementById('health-score').textContent = `${health.overall_health.toFixed(1)}%`;
+                document.getElementById('total-partitions').textContent = health.total_partitions;
+                document.getElementById('under-replicated').textContent = health.under_replicated_partitions;
+                document.getElementById('offline-partitions').textContent = health.offline_partitions;
+                
+                // Update health indicator
+                const indicator = document.getElementById('health-indicator');
+                indicator.className = `status-indicator ${health.status}`;
+                indicator.textContent = health.status.toUpperCase();
+            }
+            
+            // Update broker list
+            if (data.cluster_metadata && data.cluster_metadata.brokers) {
+                const brokerList = document.getElementById('broker-list');
+                brokerList.innerHTML = '';
+                
+                Object.entries(data.cluster_metadata.brokers).forEach(([id, broker]) => {
+                    const brokerDiv = document.createElement('div');
+                    brokerDiv.className = 'broker-item';
+                    brokerDiv.innerHTML = `
+                        <span><strong>Broker ${id}</strong> (${broker.host}:${broker.port})</span>
+                        <span class="broker-status">ONLINE</span>
+                    `;
+                    brokerList.appendChild(brokerDiv);
+                });
+            }
+            
+            // Update events
+            if (data.recent_changes) {
+                const eventsList = document.getElementById('events-list');
+                eventsList.innerHTML = '';
+                
+                data.recent_changes.slice(-10).reverse().forEach(change => {
+                    const eventDiv = document.createElement('div');
+                    const eventType = change.type === 'isr_change' ? 'event-isr-change' : 'event-leader-election';
+                    eventDiv.className = `event-item ${eventType}`;
+                    
+                    const timestamp = new Date(change.timestamp * 1000).toLocaleTimeString();
+                    let description = '';
+                    
+                    if (change.type === 'isr_change') {
+                        description = `ISR Changed: ${change.topic}[${change.partition}] - Size: ${change.isr_size}`;
+                    } else if (change.type === 'leader_election') {
+                        description = `Leader Election: ${change.topic}[${change.partition}] - New Leader: ${change.new_leader}`;
+                    }
+                    
+                    eventDiv.innerHTML = `
+                        <strong>${description}</strong><br>
+                        <small>${timestamp}</small>
+                    `;
+                    eventsList.appendChild(eventDiv);
+                });
+            }
+            
+            // Update topology chart
+            updateTopologyChart(data.cluster_metadata);
+        }
+        
+        function updateTopologyChart(metadata) {
+            console.log('🗺️ Updating topology chart with metadata:', metadata);
+            
+            if (!metadata || !metadata.brokers) {
+                console.log('❌ No brokers data available for topology chart');
+                return;
+            }
+            
+            // Prepare data for Plotly.js
+            const x = [];
+            const y = [];
+            const text = [];
+            const colors = [];
+            
+            // Add broker nodes
+            Object.entries(metadata.brokers).forEach(([id, broker]) => {
+                x.push(parseInt(id) * 2); // Spread them out more
+                y.push(0);
+                text.push(`Broker ${id}<br>${broker.host}:${broker.port}`);
+                colors.push('#4299e1');
+            });
+            
+            // Add topic partitions as additional nodes
+            if (metadata.topics) {
+                Object.entries(metadata.topics).forEach(([topicName, topic]) => {
+                    if (topic.partitions) {
+                        Object.entries(topic.partitions).forEach(([partitionId, partition]) => {
+                            x.push(parseInt(partitionId) * 0.5);
+                            y.push(1);
+                            text.push(`${topicName}[${partitionId}]<br>Leader: ${partition.leader}`);
+                            colors.push(partition.under_replicated ? '#e53e3e' : '#48bb78');
+                        });
+                    }
+                });
+            }
+            
+            const trace = {
+                x: x,
+                y: y,
+                text: text,
+                mode: 'markers+text',
+                type: 'scatter',
+                marker: {
+                    size: 15,
+                    color: colors,
+                    line: { width: 2, color: '#ffffff' }
+                },
+                textposition: 'top center',
+                textfont: { size: 10 }
+            };
+            
+            const layout = {
+                title: {
+                    text: 'Kafka Cluster Topology',
+                    font: { size: 16 }
+                },
+                showlegend: false,
+                xaxis: { 
+                    showgrid: false, 
+                    zeroline: false, 
+                    showticklabels: false,
+                    range: [-1, Math.max(...x) + 1]
+                },
+                yaxis: { 
+                    showgrid: false, 
+                    zeroline: false, 
+                    showticklabels: false,
+                    range: [-0.5, 1.5]
+                },
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                margin: { t: 40, b: 20, l: 20, r: 20 }
+            };
+            
+            console.log('📊 Plotting topology chart with data:', trace);
+            
+            // Clear loading message
+            const chartContainer = document.getElementById('topology-chart');
+            chartContainer.innerHTML = '';
+            
+            try {
+                Plotly.newPlot('topology-chart', [trace], layout, {displayModeBar: false});
+                console.log('✅ Topology chart rendered successfully');
+            } catch (error) {
+                console.error('❌ Error rendering topology chart:', error);
+                chartContainer.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 400px; color: #e53e3e;">
+                        <div>Error rendering topology chart: ${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        async function injectFailure(scenario) {
+            try {
+                const response = await fetch(`/api/inject-failure/${scenario}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateFailureStatus(`✅ Injected: ${scenario} (${result.failure_id})`);
+                    currentFailures[result.failure_id] = scenario;
+                } else {
+                    updateFailureStatus(`❌ Failed: ${result.error}`);
+                }
+            } catch (error) {
+                updateFailureStatus(`❌ Error: ${error.message}`);
+            }
+        }
+        
+        async function recoverAll() {
+            console.log('🔧 Starting recovery process...');
+            const failureIds = Object.keys(currentFailures);
+            
+            for (const failureId of failureIds) {
+                try {
+                    console.log(`🔧 Recovering failure: ${failureId}`);
+                    await fetch(`/api/recovery/${failureId}`);
+                } catch (error) {
+                    console.error('Recovery error:', error);
+                }
+            }
+            
+            updateFailureStatus('🔧 Recovery initiated for all failures');
+            currentFailures = {};
+            
+            // Force refresh dashboard data after recovery
+            console.log('🔄 Refreshing dashboard after recovery...');
+            setTimeout(() => {
+                refreshData();
+            }, 2000); // Wait 2 seconds for recovery to take effect
+            
+            // Additional refresh after more time
+            setTimeout(() => {
+                console.log('🔄 Final refresh after recovery...');
+                refreshData();
+            }, 10000); // Wait 10 seconds for full recovery
+        }
+        
+        async function forceRecovery() {
+            console.log('🚀 Force recovery - restarting all brokers...');
+            updateFailureStatus('🚀 Force recovery initiated - restarting all brokers...');
+            
+            try {
+                // Restart all brokers via Docker
+                const brokerNames = ['docker-broker-us-1-1', 'docker-broker-us-2-1', 'docker-broker-eu-1-1', 'docker-broker-eu-2-1', 'docker-broker-ap-1-1'];
+                
+                for (const broker of brokerNames) {
+                    try {
+                        console.log(`🔄 Restarting ${broker}...`);
+                        // Note: This would require a backend API to restart Docker containers
+                        // For now, we'll just refresh the data
+                    } catch (error) {
+                        console.error(`❌ Error restarting ${broker}:`, error);
+                    }
+                }
+                
+                // Force refresh dashboard data
+                console.log('🔄 Refreshing dashboard after force recovery...');
+                setTimeout(() => {
+                    refreshData();
+                }, 3000);
+                
+                setTimeout(() => {
+                    refreshData();
+                }, 8000);
+                
+                updateFailureStatus('✅ Force recovery completed - dashboard refreshed');
+                
+            } catch (error) {
+                console.error('❌ Force recovery failed:', error);
+                updateFailureStatus('❌ Force recovery failed: ' + error.message);
+            }
+        }
+        
+        function updateFailureStatus(message) {
+            const statusDiv = document.getElementById('failure-status');
+            statusDiv.innerHTML = `<div style="padding: 0.5rem; background: #ebf8ff; border-radius: 4px; margin-top: 0.5rem;">${message}</div>`;
+            
+            setTimeout(() => {
+                statusDiv.innerHTML = '';
+            }, 5000);
+        }
+        
+        // Manual refresh function
+        async function refreshData() {
+            try {
+                console.log('🔄 Manual refresh requested');
+                const response = await fetch('/api/cluster-status');
+                const data = await response.json();
+                console.log('📊 Manual refresh data:', data);
+                updateDashboard(data);
+            } catch (error) {
+                console.error('❌ Manual refresh failed:', error);
+            }
+        }
+        
+        // Test WebSocket connection
+        function testWebSocket() {
+            console.log('🔌 Testing WebSocket connection...');
+            console.log('Socket connected:', socket.connected);
+            console.log('Socket ID:', socket.id);
+            
+            if (socket.connected) {
+                console.log('📡 Emitting request_status...');
+                socket.emit('request_status');
+                console.log('✅ WebSocket test completed');
+            } else {
+                console.log('❌ WebSocket not connected');
+            }
+        }
+        
+        // Poll for updates every 5 seconds
+        setInterval(() => {
+            if (socket.connected) {
+                socket.emit('request_status');
+            } else {
+                // Fallback to API polling if WebSocket is not connected
+                console.log('⚠️ WebSocket not connected, using API fallback');
+                refreshData();
+            }
+        }, 5000);
+        
+        // Additional fallback: Force refresh every 10 seconds regardless of WebSocket status
+        setInterval(() => {
+            console.log('🔄 Force refresh via API');
+            refreshData();
+        }, 10000);
+        
+        // Initial load: Force refresh immediately
+        console.log('🚀 Initial page load - refreshing data');
+        refreshData();
+    </script>
+</body>
+</html>

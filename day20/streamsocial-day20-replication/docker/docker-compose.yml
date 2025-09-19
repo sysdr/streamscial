@@ -1,0 +1,145 @@
+version: '3.8'
+
+services:
+  # Zookeeper ensemble
+  zk1:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_SERVERS: zk1:2888:3888
+    ports:
+      - "2181:2181"
+    networks:
+      - us-east
+      - monitoring
+
+  # US-East Region Brokers
+  broker-us-1:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on: [zk1]
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zk1:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker-us-1:29091,PLAINTEXT_HOST://localhost:9091
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_OPTS: -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=9999
+      KAFKA_LOG_RETENTION_HOURS: 1
+      KAFKA_REPLICA_LAG_TIME_MAX_MS: 10000
+    ports:
+      - "9091:9091"
+      - "9999:9999"
+    networks:
+      - us-east
+      - monitoring
+
+  broker-us-2:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on: [zk1]
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zk1:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker-us-2:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 10000
+      KAFKA_JMX_OPTS: -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=10000
+      KAFKA_LOG_RETENTION_HOURS: 1
+      KAFKA_REPLICA_LAG_TIME_MAX_MS: 10000
+    ports:
+      - "9092:9092"
+      - "10000:10000"
+    networks:
+      - us-east
+      - eu-west
+      - monitoring
+
+  # EU-West Region Brokers
+  broker-eu-1:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on: [zk1]
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zk1:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker-eu-1:29093,PLAINTEXT_HOST://localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 10001
+      KAFKA_JMX_OPTS: -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=10001
+      KAFKA_LOG_RETENTION_HOURS: 1
+      KAFKA_REPLICA_LAG_TIME_MAX_MS: 10000
+    ports:
+      - "9093:9093"
+      - "10001:10001"
+    networks:
+      - eu-west
+      - monitoring
+
+  broker-eu-2:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on: [zk1]
+    environment:
+      KAFKA_BROKER_ID: 4
+      KAFKA_ZOOKEEPER_CONNECT: zk1:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker-eu-2:29094,PLAINTEXT_HOST://localhost:9094
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 10002
+      KAFKA_JMX_OPTS: -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=10002
+      KAFKA_LOG_RETENTION_HOURS: 1
+      KAFKA_REPLICA_LAG_TIME_MAX_MS: 10000
+    ports:
+      - "9094:9094"
+      - "10002:10002"
+    networks:
+      - eu-west
+      - monitoring
+
+  # Asia-Pacific Region Broker
+  broker-ap-1:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on: [zk1]
+    environment:
+      KAFKA_BROKER_ID: 5
+      KAFKA_ZOOKEEPER_CONNECT: zk1:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker-ap-1:29095,PLAINTEXT_HOST://localhost:9095
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 10003
+      KAFKA_JMX_OPTS: -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -Dcom.sun.management.jmxremote.rmi.port=10003
+      KAFKA_LOG_RETENTION_HOURS: 1
+      KAFKA_REPLICA_LAG_TIME_MAX_MS: 10000
+    ports:
+      - "9095:9095"
+      - "10003:10003"
+    networks:
+      - asia-pacific
+      - monitoring
+
+networks:
+  us-east:
+    driver: bridge
+  eu-west:
+    driver: bridge
+  asia-pacific:
+    driver: bridge
+  monitoring:
+    driver: bridge
