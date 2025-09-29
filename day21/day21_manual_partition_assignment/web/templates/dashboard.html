@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial - Trend Analysis Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.3.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .worker-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .trend-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .hashtag {
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .trend-score {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .status-online { background-color: #4CAF50; }
+        .status-offline { background-color: #f44336; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔥 StreamSocial Trend Analysis</h1>
+            <p>Real-time hashtag trending with manual partition assignment</p>
+        </div>
+        
+        <div id="worker-stats" class="stats-grid">
+            <!-- Worker cards will be populated here -->
+        </div>
+        
+        <div class="chart-container">
+            <h3>Global Trend Velocity</h3>
+            <div id="trend-chart"></div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let trendData = {};
+        
+        socket.on('trend_update', function(data) {
+            if (data.worker && data.trends) {
+                trendData[data.worker] = data.trends;
+                updateDashboard();
+            }
+        });
+        
+        function updateDashboard() {
+            updateWorkerCards();
+            updateTrendChart();
+        }
+        
+        function updateWorkerCards() {
+            const container = document.getElementById('worker-stats');
+            container.innerHTML = '';
+            
+            Object.keys(trendData).forEach(worker => {
+                const trends = trendData[worker];
+                const card = document.createElement('div');
+                card.className = 'worker-card';
+                
+                let trendsHtml = trends.slice(0, 5).map(trend => `
+                    <div class="trend-item">
+                        <span class="hashtag">#${trend.hashtag}</span>
+                        <div>
+                            <div class="trend-score">Score: ${trend.trend_score.toFixed(1)}</div>
+                            <small>Velocity: ${trend.velocity.toFixed(1)}/min</small>
+                        </div>
+                    </div>
+                `).join('');
+                
+                card.innerHTML = `
+                    <h3>
+                        <span class="status-indicator status-online"></span>
+                        ${worker}
+                    </h3>
+                    <p>Processing ${trends.length} trending hashtags</p>
+                    ${trendsHtml}
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
+        function updateTrendChart() {
+            const allTrends = Object.values(trendData).flat();
+            const trendMap = {};
+            
+            // Aggregate trends across workers
+            allTrends.forEach(trend => {
+                if (!trendMap[trend.hashtag]) {
+                    trendMap[trend.hashtag] = {
+                        hashtag: trend.hashtag,
+                        total_score: 0,
+                        workers: []
+                    };
+                }
+                trendMap[trend.hashtag].total_score += trend.trend_score;
+                trendMap[trend.hashtag].workers.push(trend.worker_id);
+            });
+            
+            const sortedTrends = Object.values(trendMap)
+                .sort((a, b) => b.total_score - a.total_score)
+                .slice(0, 10);
+            
+            const trace = {
+                x: sortedTrends.map(t => `#${t.hashtag}`),
+                y: sortedTrends.map(t => t.total_score),
+                type: 'bar',
+                marker: {
+                    color: 'rgba(255, 215, 0, 0.7)',
+                    line: {
+                        color: 'rgba(255, 215, 0, 1)',
+                        width: 2
+                    }
+                }
+            };
+            
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: 'white' },
+                xaxis: { color: 'white' },
+                yaxis: { color: 'white', title: 'Trend Score' },
+                margin: { t: 20, b: 100 }
+            };
+            
+            Plotly.newPlot('trend-chart', [trace], layout);
+        }
+        
+        // Initial load
+        fetch('/api/trends')
+            .then(response => response.json())
+            .then(data => {
+                trendData = data;
+                updateDashboard();
+            });
+    </script>
+</body>
+</html>
