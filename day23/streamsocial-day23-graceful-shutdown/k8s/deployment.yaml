@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streamsocial-consumer
+  labels:
+    app: streamsocial-consumer
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: streamsocial-consumer
+  template:
+    metadata:
+      labels:
+        app: streamsocial-consumer
+    spec:
+      terminationGracePeriodSeconds: 60  # Allow 60s for graceful shutdown
+      containers:
+      - name: consumer
+        image: streamsocial:day23
+        ports:
+        - containerPort: 8080
+          name: health
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+        - name: REDIS_HOST
+          value: "redis"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 15"] # Give time for graceful shutdown
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: streamsocial-service
+spec:
+  selector:
+    app: streamsocial-consumer
+  ports:
+  - port: 8080
+    name: health
+  - port: 9090
+    name: metrics

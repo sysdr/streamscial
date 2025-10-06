@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial - Graceful Shutdown Dashboard</title>
+    <link href="../static/css/dashboard.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 StreamSocial Recommendation Engine</h1>
+            <h2>Day 23: Graceful Shutdown Monitoring</h2>
+            <div class="status-indicator" id="overall-status">
+                <span class="status-dot healthy"></span>
+                <span>System Status: <span id="status-text">Healthy</span></span>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <h3>🔄 Consumer Status</h3>
+                <div id="consumer-status">
+                    <div class="metric">
+                        <span class="metric-label">Current Phase:</span>
+                        <span class="metric-value" id="shutdown-phase">running</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Last Processed:</span>
+                        <span class="metric-value" id="last-processed">Never</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="processing-progress"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📊 Real-time Metrics</h3>
+                <div id="metrics-display">
+                    <div class="metric">
+                        <span class="metric-label">Messages Processed:</span>
+                        <span class="metric-value" id="messages-count">0</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Average Latency:</span>
+                        <span class="metric-value" id="avg-latency">0ms</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Active Consumers:</span>
+                        <span class="metric-value" id="active-consumers">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>🚀 Zero-Downtime Deployment</h3>
+                <div class="deployment-controls">
+                    <button onclick="simulateShutdown()" class="btn btn-warning">Simulate Graceful Shutdown</button>
+                    <button onclick="clearEvents()" class="btn btn-secondary">Clear Events</button>
+                </div>
+                <div id="shutdown-timeline" class="timeline">
+                    <!-- Shutdown events will be populated here -->
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📈 Processing Timeline</h3>
+                <canvas id="processing-chart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <div class="logs-section">
+            <h3>📝 System Logs</h3>
+            <div id="logs-container" class="logs">
+                <div class="log-entry">System initialized</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../static/js/dashboard.js"></script>
+</body>
+</html>
