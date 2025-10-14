@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "$id": "https://streamsocial.com/schemas/interaction/v1",
+  "title": "User Interaction Event",
+  "description": "Schema for user interaction events",
+  "type": "object",
+  "properties": {
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "interaction_type": {
+      "type": "string",
+      "enum": ["like", "comment", "share", "follow", "unfollow", "post_created"]
+    },
+    "actor_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9_]{3,30}$"
+    },
+    "target_id": {
+      "type": "string",
+      "description": "ID of the target (user, post, comment)"
+    },
+    "interaction_data": {
+      "type": "object",
+      "oneOf": [
+        {
+          "properties": {
+            "content": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "media_urls": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uri"
+              },
+              "maxItems": 10
+            }
+          },
+          "required": ["content"],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "comment_text": {
+              "type": "string",
+              "maxLength": 500
+            }
+          },
+          "required": ["comment_text"],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "reaction_type": {
+              "type": "string",
+              "enum": ["like", "love", "angry", "sad", "wow"]
+            }
+          },
+          "required": ["reaction_type"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "source": {"type": "string"},
+        "version": {"type": "string"},
+        "client_type": {
+          "type": "string",
+          "enum": ["web", "mobile", "api"]
+        }
+      }
+    }
+  },
+  "required": ["event_id", "timestamp", "interaction_type", "actor_id", "target_id", "metadata"]
+}

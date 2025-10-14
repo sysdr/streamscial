@@ -1,0 +1,28 @@
+{
+  "schemas": {
+    "user.profile.v1": {
+      "file": "user/profile_schema.json",
+      "compatibility": "BACKWARD",
+      "evolution_strategy": "additive_only"
+    },
+    "interaction.v1": {
+      "file": "interaction/interaction_schema.json",
+      "compatibility": "FULL",
+      "evolution_strategy": "strict"
+    }
+  },
+  "evolution_rules": {
+    "additive_only": {
+      "allow_new_optional_fields": true,
+      "allow_new_required_fields": false,
+      "allow_field_removal": false,
+      "allow_type_changes": false
+    },
+    "strict": {
+      "allow_new_optional_fields": false,
+      "allow_new_required_fields": false,
+      "allow_field_removal": false,
+      "allow_type_changes": false
+    }
+  }
+}
