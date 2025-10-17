@@ -1,0 +1,13 @@
+{
+  "namespace": "com.streamsocial.events",
+  "type": "record",
+  "name": "UserProfile",
+  "fields": [
+    {"name": "user_id", "type": "string"},
+    {"name": "username", "type": "string"},
+    {"name": "email", "type": "string"},
+    {"name": "created_at", "type": {"type": "long", "logicalType": "timestamp-millis"}},
+    {"name": "profile_version", "type": "int", "default": 1},
+    {"name": "metadata", "type": ["null", {"type": "map", "values": "string"}], "default": null}
+  ]
+}

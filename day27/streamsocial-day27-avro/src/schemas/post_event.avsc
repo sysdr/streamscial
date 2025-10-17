@@ -1,0 +1,16 @@
+{
+  "namespace": "com.streamsocial.events",
+  "type": "record",
+  "name": "PostEvent",
+  "fields": [
+    {"name": "post_id", "type": "string"},
+    {"name": "user_id", "type": "string"},
+    {"name": "content", "type": "string"},
+    {"name": "media_urls", "type": {"type": "array", "items": "string"}, "default": []},
+    {"name": "hashtags", "type": {"type": "array", "items": "string"}, "default": []},
+    {"name": "mentions", "type": {"type": "array", "items": "string"}, "default": []},
+    {"name": "created_at", "type": {"type": "long", "logicalType": "timestamp-millis"}},
+    {"name": "location", "type": ["null", {"type": "record", "name": "Location", "fields": [{"name": "lat", "type": "double"}, {"name": "lng", "type": "double"}]}], "default": null},
+    {"name": "visibility", "type": {"type": "enum", "name": "Visibility", "symbols": ["PUBLIC", "PRIVATE", "FRIENDS"]}, "default": "PUBLIC"}
+  ]
+}

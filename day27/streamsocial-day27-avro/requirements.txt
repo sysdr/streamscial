@@ -1,0 +1,16 @@
+confluent-kafka[avro]==2.4.0
+avro-python3==1.10.2
+confluent-kafka==2.4.0
+requests==2.31.0
+flask==3.0.2
+pytest==8.1.1
+pytest-asyncio==0.23.6
+python-schema-registry-client==2.4.0
+fastavro==1.9.4
+pydantic==2.7.1
+rich==13.7.1
+uvicorn==0.29.0
+fastapi==0.110.2
+websockets==12.0
+aiofiles==23.2.1
+jinja2==3.1.4
