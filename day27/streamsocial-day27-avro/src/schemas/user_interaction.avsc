@@ -1,0 +1,15 @@
+{
+  "namespace": "com.streamsocial.events",
+  "type": "record",
+  "name": "UserInteraction",
+  "fields": [
+    {"name": "interaction_id", "type": "string"},
+    {"name": "user_id", "type": "string"},
+    {"name": "interaction_type", "type": {"type": "enum", "name": "InteractionType", "symbols": ["POST", "LIKE", "COMMENT", "FOLLOW", "SHARE"]}},
+    {"name": "target_id", "type": "string"},
+    {"name": "content", "type": ["null", "string"], "default": null},
+    {"name": "timestamp", "type": {"type": "long", "logicalType": "timestamp-millis"}},
+    {"name": "metadata", "type": ["null", {"type": "map", "values": "string"}], "default": null},
+    {"name": "schema_version", "type": "int", "default": 1}
+  ]
+}
