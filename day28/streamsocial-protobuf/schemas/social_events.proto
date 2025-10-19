@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package streamsocial;
+
+message UserInteraction {
+  string event_id = 1;
+  string user_id = 2;
+  EventType event_type = 3;
+  string target_id = 4;
+  int64 timestamp = 5;
+  Location location = 6;
+  DeviceInfo device = 7;
+  map<string, string> metadata = 8;
+}
+
+enum EventType {
+  UNKNOWN = 0;
+  LIKE = 1;
+  COMMENT = 2;
+  SHARE = 3;
+  VIEW = 4;
+  FOLLOW = 5;
+}
+
+message Location {
+  double latitude = 1;
+  double longitude = 2;
+  string country_code = 3;
+}
+
+message DeviceInfo {
+  string device_type = 1;
+  string os_version = 2;
+  string app_version = 3;
+  ConnectionType connection = 4;
+}
+
+enum ConnectionType {
+  WIFI = 0;
+  CELLULAR_4G = 1;
+  CELLULAR_5G = 2;
+  CELLULAR_3G = 3;
+}
+
+message PerformanceMetrics {
+  string format_type = 1;
+  int64 serialization_time_ns = 2;
+  int64 deserialization_time_ns = 3;
+  int32 payload_size_bytes = 4;
+  int64 timestamp = 5;
+  string event_id = 6;
+}

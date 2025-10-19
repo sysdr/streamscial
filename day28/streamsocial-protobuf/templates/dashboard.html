@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial - Protobuf vs Avro Performance Dashboard</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.12.1.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <h1>🚀 StreamSocial Performance Dashboard</h1>
+            <p>Protocol Buffers vs Avro vs JSON - Real-time Comparison</p>
+        </header>
+        
+        <div class="metrics-grid">
+            <div class="metric-card protobuf">
+                <h3>Protocol Buffers</h3>
+                <div class="metric-value" id="protobuf-size">-- bytes</div>
+                <div class="metric-label">Avg Payload Size</div>
+                <div class="metric-time" id="protobuf-time">-- μs</div>
+            </div>
+            
+            <div class="metric-card avro">
+                <h3>Apache Avro</h3>
+                <div class="metric-value" id="avro-size">-- bytes</div>
+                <div class="metric-label">Avg Payload Size</div>
+                <div class="metric-time" id="avro-time">-- μs</div>
+            </div>
+            
+            <div class="metric-card json">
+                <h3>JSON</h3>
+                <div class="metric-value" id="json-size">-- bytes</div>
+                <div class="metric-label">Avg Payload Size</div>
+                <div class="metric-time" id="json-time">-- μs</div>
+            </div>
+        </div>
+        
+        <div class="charts-container">
+            <div class="chart-card">
+                <h3>Payload Size Comparison</h3>
+                <div id="size-chart"></div>
+            </div>
+            
+            <div class="chart-card">
+                <h3>Serialization Performance</h3>
+                <div id="performance-chart"></div>
+            </div>
+        </div>
+        
+        <div class="live-feed">
+            <h3>Live Performance Feed</h3>
+            <div id="live-metrics">
+                <div class="live-item">Starting performance monitoring...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

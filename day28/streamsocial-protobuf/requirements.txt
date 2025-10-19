@@ -1,0 +1,15 @@
+kafka-python==2.0.2
+protobuf==4.25.3
+avro-python3==1.10.2
+confluent-kafka[avro]==2.3.0
+flask==3.0.2
+flask-socketio==5.3.6
+requests==2.31.0
+prometheus-client==0.20.0
+psutil==5.9.8
+websockets==12.0
+plotly==5.17.0
+pandas==2.2.1
+numpy==1.26.4
+python-dotenv==1.0.1
+gunicorn==21.2.0
