@@ -1,0 +1,15 @@
+{
+    "type": "record",
+    "name": "UserProfile",
+    "namespace": "com.streamsocial.user",
+    "doc": "StreamSocial user profile schema v3 - premium features",
+    "fields": [
+        {"name": "user_id", "type": "string", "doc": "Unique user identifier"},
+        {"name": "username", "type": "string", "doc": "Display username"},
+        {"name": "email", "type": "string", "doc": "User email address"},
+        {"name": "created_at", "type": "long", "logicalType": "timestamp-millis", "doc": "Account creation timestamp"},
+        {"name": "avatar_url", "type": ["null", "string"], "default": null, "doc": "User profile image URL"},
+        {"name": "premium_badge", "type": ["null", "string"], "default": null, "doc": "Premium user badge type"},
+        {"name": "subscription_tier", "type": ["null", "string"], "default": null, "doc": "Premium subscription level"}
+    ]
+}
