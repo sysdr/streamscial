@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>StreamSocial Connect Cluster Monitor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔗</text></svg>">
+    <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+            padding-bottom: 80px;
+        }
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            padding: 30px 20px; 
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #f1f5f9;
+        }
+        .header h1 {
+            font-size: 2.75rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+        .header p {
+            font-size: 1.125rem;
+            color: #94a3b8;
+            font-weight: 400;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 12px;
+            padding: 28px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(148, 163, 184, 0.1);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(96, 165, 250, 0.2);
+        }
+        .card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #f1f5f9;
+            letter-spacing: -0.25px;
+        }
+        .health-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 8px currentColor;
+        }
+        .healthy { 
+            background: #10b981;
+            color: #10b981;
+        }
+        .unhealthy { 
+            background: #ef4444;
+            color: #ef4444;
+        }
+        .unreachable { 
+            background: #f59e0b;
+            color: #f59e0b;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        .worker-list {
+            list-style: none;
+        }
+        .worker-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(148, 163, 184, 0.08);
+            transition: all 0.2s ease;
+        }
+        .worker-item:hover {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: rgba(96, 165, 250, 0.2);
+        }
+        .worker-item strong {
+            color: #e2e8f0;
+            font-weight: 600;
+        }
+        .worker-item span {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            text-transform: capitalize;
+        }
+        .chart-container {
+            grid-column: 1 / -1;
+            height: 420px;
+        }
+        .refresh-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9375rem;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+        .refresh-btn:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.15);
+        }
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+        #cluster-health p {
+            color: #cbd5e1;
+            margin-top: 8px;
+            font-size: 0.9375rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔗 StreamSocial Connect Cluster</h1>
+            <p>Day 31: Monitoring distributed data integration</p>
+        </div>
+        
+        <div class="metrics-grid">
+            <div class="card">
+                <h3>Cluster Health</h3>
+                <div id="cluster-health"></div>
+            </div>
+            
+            <div class="card">
+                <h3>Workers Status</h3>
+                <div id="workers-list"></div>
+            </div>
+            
+            <div class="card">
+                <h3>Active Connectors</h3>
+                <div id="connectors-list"></div>
+            </div>
+            
+            <div class="card chart-container">
+                <h3>Timeline</h3>
+                <div id="timeline-chart"></div>
+            </div>
+        </div>
+    </div>
+    
+    <button class="refresh-btn" onclick="updateDashboard()">🔄 Refresh</button>
+    
+    <script>
+        let updateInterval;
+        
+        function updateDashboard() {
+            // Add cache-busting timestamp
+            const timestamp = new Date().getTime();
+            fetch(`/api/metrics?t=${timestamp}`, {
+                method: 'GET',
+                cache: 'no-cache',
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Metrics data:', data);
+                    updateClusterHealth(data);
+                    updateWorkersList(data);
+                    updateConnectorsList(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching metrics:', error);
+                });
+                
+            fetch(`/api/timeline-chart?t=${timestamp}`, {
+                method: 'GET',
+                cache: 'no-cache',
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
+                .then(chart => {
+                    if (Object.keys(chart).length > 0) {
+                        Plotly.newPlot('timeline-chart', chart.data, chart.layout);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching chart:', error);
+                });
+        }
+        
+        function updateClusterHealth(data) {
+            const healthyWorkers = Object.values(data.workers).filter(w => w.status === 'healthy').length;
+            const totalWorkers = Object.keys(data.workers).length;
+            const healthPercentage = totalWorkers > 0 ? (healthyWorkers / totalWorkers) * 100 : 0;
+            
+            // Professional color scheme
+            let healthColor;
+            if (healthPercentage >= 67) {
+                healthColor = '#10b981'; // Emerald green
+            } else if (healthPercentage >= 33) {
+                healthColor = '#f59e0b'; // Amber
+            } else {
+                healthColor = '#ef4444'; // Red
+            }
+            
+            document.getElementById('cluster-health').innerHTML = `
+                <div style="font-size: 2.5rem; font-weight: 700; color: ${healthColor}; margin-bottom: 12px; text-shadow: 0 0 20px ${healthColor}40;">
+                    ${healthPercentage.toFixed(0)}%
+                </div>
+                <p>${healthyWorkers}/${totalWorkers} workers healthy</p>
+                <p>${Object.keys(data.connectors).length} connectors active</p>
+            `;
+        }
+        
+        function updateWorkersList(data) {
+            const html = Object.entries(data.workers).map(([id, worker]) => `
+                <div class="worker-item">
+                    <div class="health-indicator">
+                        <div class="status-dot ${worker.status}"></div>
+                        <strong>${id}</strong>
+                    </div>
+                    <span style="font-size: 0.9rem; color: #666;">${worker.status}</span>
+                </div>
+            `).join('');
+            
+            document.getElementById('workers-list').innerHTML = html || '<p>No workers detected</p>';
+        }
+        
+        function updateConnectorsList(data) {
+            const html = Object.entries(data.connectors).map(([name, connector]) => `
+                <div class="worker-item">
+                    <div class="health-indicator">
+                        <div class="status-dot ${connector.connector.state === 'RUNNING' ? 'healthy' : 'unhealthy'}"></div>
+                        <strong>${name}</strong>
+                    </div>
+                    <span style="font-size: 0.9rem; color: #666;">${connector.connector.state}</span>
+                </div>
+            `).join('');
+            
+            document.getElementById('connectors-list').innerHTML = html || '<p>No connectors configured</p>';
+        }
+        
+        // Start auto-refresh
+        updateDashboard();
+        updateInterval = setInterval(updateDashboard, 5000);
+    </script>
+</body>
+</html>
