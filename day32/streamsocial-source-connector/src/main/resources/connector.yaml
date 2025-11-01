@@ -1,0 +1,16 @@
+connector_id: "file-source-001"
+source_directory: "./uploads"
+offset_file: "./data/offsets.json"
+
+kafka:
+  bootstrap_servers: "localhost:9092"
+  topic: "user-content-uploads"
+
+monitoring:
+  metrics_port: 8080
+  health_check_port: 8081
+
+processing:
+  batch_size: 100
+  flush_interval_ms: 5000
+  max_retries: 3
