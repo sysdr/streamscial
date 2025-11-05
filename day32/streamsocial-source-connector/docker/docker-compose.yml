@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+
+  file-source-connector:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    depends_on:
+      - kafka
+    volumes:
+      - ../uploads:/app/uploads
+      - ../data:/app/data
+      - ../logs:/app/logs
+    ports:
+      - "8081:8080"
+      - "8083:8081"
+    environment:
+      - PYTHONPATH=/app/src/main/python
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    command: python src/main/python/file_source_connector.py
+
+  monitoring:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    depends_on:
+      - file-source-connector
+    ports:
+      - "8080:8080"
+    command: python src/main/python/monitoring_service.py

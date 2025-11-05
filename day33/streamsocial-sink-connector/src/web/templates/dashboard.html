@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial Hashtag Analytics</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.31.0.min.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg,rgb(66, 66, 66) 0%, #000000 100%);
+        }
+        .card-custom {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .card-custom:hover {
+            transform: translateY(-5px);
+        }
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .trending-item {
+            padding: 12px;
+            margin: 8px 0;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #1DA1F2;
+        }
+        .hashtag-text {
+            color: #1DA1F2;
+            font-weight: bold;
+        }
+        .last-updated {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark gradient-bg">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-hashtag me-2"></i>StreamSocial Hashtag Analytics
+            </span>
+            <span class="navbar-text">
+                <i class="fas fa-clock me-1"></i>
+                <span id="last-updated">Loading...</span>
+            </span>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- Statistics Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card card-custom text-center">
+                    <div class="card-body">
+                        <i class="fas fa-hashtag text-primary stat-icon"></i>
+                        <h3 class="card-title" id="total-hashtags">-</h3>
+                        <p class="card-text text-muted">Total Hashtags</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-custom text-center">
+                    <div class="card-body">
+                        <i class="fas fa-comments text-success stat-icon"></i>
+                        <h3 class="card-title" id="total-mentions">-</h3>
+                        <p class="card-text text-muted">Total Mentions</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-custom text-center">
+                    <div class="card-body">
+                        <i class="fas fa-chart-line text-warning stat-icon"></i>
+                        <h3 class="card-title" id="avg-mentions">-</h3>
+                        <p class="card-text text-muted">Avg Mentions</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-custom text-center">
+                    <div class="card-body">
+                        <i class="fas fa-fire text-danger stat-icon"></i>
+                        <h3 class="card-title" id="max-mentions">-</h3>
+                        <p class="card-text text-muted">Max Mentions</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="row">
+            <!-- Trending Chart -->
+            <div class="col-lg-8">
+                <div class="card card-custom">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>Top Trending Hashtags
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="trending-chart" style="height: 400px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Feed -->
+            <div class="col-lg-4">
+                <div class="card card-custom">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-fire me-2"></i>Live Trending Feed
+                        </h5>
+                        <span class="badge bg-success">Live</span>
+                    </div>
+                    <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                        <div id="trending-list">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        class HashtagDashboard {
+            constructor() {
+                this.lastUpdated = new Date();
+                this.init();
+                this.startAutoRefresh();
+            }
+
+            init() {
+                this.loadStats();
+                this.loadTrendingList();
+                this.loadChart();
+            }
+
+            async loadStats() {
+                try {
+                    const response = await fetch('/api/stats');
+                    const data = await response.json();
+                    
+                    document.getElementById('total-hashtags').textContent = 
+                        data.total_hashtags?.toLocaleString() || '0';
+                    document.getElementById('total-mentions').textContent = 
+                        data.total_mentions?.toLocaleString() || '0';
+                    document.getElementById('avg-mentions').textContent = 
+                        Math.round(data.avg_mentions || 0);
+                    document.getElementById('max-mentions').textContent = 
+                        data.max_mentions?.toLocaleString() || '0';
+                        
+                } catch (error) {
+                    console.error('Error loading stats:', error);
+                }
+            }
+
+            async loadTrendingList() {
+                try {
+                    const response = await fetch('/api/trending?limit=20');
+                    const data = await response.json();
+                    
+                    const listContainer = document.getElementById('trending-list');
+                    if (data.hashtags && data.hashtags.length > 0) {
+                        listContainer.innerHTML = data.hashtags.map((hashtag, index) => `
+                            <div class="trending-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="badge bg-primary me-2">${index + 1}</span>
+                                        <span class="hashtag-text">#${hashtag.hashtag}</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-bold">${hashtag.count.toLocaleString()}</div>
+                                        <small class="text-muted">Score: ${hashtag.trend_score.toFixed(1)}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        listContainer.innerHTML = '<div class="text-muted text-center">No trending hashtags yet</div>';
+                    }
+                    
+                    this.updateTimestamp(data.timestamp);
+                    
+                } catch (error) {
+                    console.error('Error loading trending list:', error);
+                    document.getElementById('trending-list').innerHTML = 
+                        '<div class="text-danger text-center">Error loading data</div>';
+                }
+            }
+
+            async loadChart() {
+                try {
+                    const response = await fetch('/api/chart/top-hashtags?limit=15');
+                    const data = await response.json();
+                    
+                    if (data.chartJSON) {
+                        const chartData = JSON.parse(data.chartJSON);
+                        Plotly.newPlot('trending-chart', chartData.data, chartData.layout, {responsive: true});
+                    }
+                    
+                } catch (error) {
+                    console.error('Error loading chart:', error);
+                }
+            }
+
+            updateTimestamp(timestamp) {
+                if (timestamp) {
+                    const date = new Date(timestamp);
+                    document.getElementById('last-updated').textContent = 
+                        `Updated: ${date.toLocaleTimeString()}`;
+                }
+            }
+
+            startAutoRefresh() {
+                // Refresh every 10 seconds
+                setInterval(() => {
+                    this.loadStats();
+                    this.loadTrendingList();
+                }, 10000);
+                
+                // Refresh chart every 30 seconds
+                setInterval(() => {
+                    this.loadChart();
+                }, 30000);
+            }
+        }
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new HashtagDashboard();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial - Kafka Log Compaction Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            min-height: 100vh;
+            color: #1f2937;
+            opacity: 1 !important;
+            display: block !important;
+            visibility: visible !important;
+        }
+        
+        html {
+            opacity: 1 !important;
+            display: block !important;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            padding: 2rem 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header h1 {
+            color: #f8fafc;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+        
+        .header p {
+            color: #cbd5e1;
+            font-size: 1rem;
+            font-weight: 400;
+        }
+        
+        .main-container {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            transition: box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .card h2 {
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .status-item {
+            text-align: center;
+            padding: 1.25rem 1rem;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            border-radius: 10px;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .status-item:nth-child(1) {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        }
+        
+        .status-item:nth-child(2) {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+        }
+        
+        .status-item:nth-child(3) {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
+        }
+        
+        .status-item:nth-child(4) {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.3);
+        }
+        
+        .status-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+        }
+        
+        .status-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .status-label {
+            font-size: 0.875rem;
+            opacity: 0.95;
+            font-weight: 500;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.3);
+        }
+        
+        .btn-danger:hover {
+            box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.4);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+        }
+        
+        .btn-primary:hover {
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+        }
+        
+        .user-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 8px;
+            background: #f8fafc;
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .user-item {
+            background: white;
+            margin-bottom: 0.75rem;
+            padding: 1.25rem;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .user-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-left-color: #1d4ed8;
+        }
+        
+        .user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .user-id {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 1.05rem;
+        }
+        
+        .user-version {
+            font-size: 0.75rem;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        
+        .user-details {
+            font-size: 0.875rem;
+            color: #64748b;
+            line-height: 1.6;
+        }
+        
+        .log-container {
+            grid-column: 1 / -1;
+        }
+        
+        .log-output {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.25rem;
+            border-radius: 8px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Courier New', monospace;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            border: 1px solid #334155;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 1rem;
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .input-group {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .input-group input, .input-group select {
+            padding: 0.625rem 0.875rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            background: white;
+            color: #1e293b;
+            transition: border-color 0.2s ease;
+        }
+        
+        .input-group input:focus, .input-group select:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 0.625rem 1.25rem;
+            border-radius: 20px;
+            font-weight: 600;
+            z-index: 1000;
+            font-size: 0.875rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+        
+        .connected {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        
+        .disconnected {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .main-container {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="connectionStatus" class="connection-status disconnected">Disconnected</div>
+    
+    <header class="header">
+        <h1>🚀 StreamSocial Kafka Log Compaction Demo</h1>
+        <p>Day 30: User Preference State Management with Log Compaction</p>
+    </header>
+    
+    <div class="main-container">
+        <div class="grid">
+            <div class="card">
+                <h2>📊 System Statistics</h2>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <div class="status-value" id="messageCount">0</div>
+                        <div class="status-label">Messages Processed</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="userCount">0</div>
+                        <div class="status-label">Active Users</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="deletedCount">0</div>
+                        <div class="status-label">Deleted Users</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-value" id="compactionRate">0%</div>
+                        <div class="status-label">Compaction Rate</div>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn" onclick="startSimulation()">Start Simulation</button>
+                    <button class="btn btn-primary" onclick="rebuildState()">Rebuild State</button>
+                    <button class="btn btn-danger" onclick="clearLogs()">Clear Logs</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>⚙️ Manual Controls</h2>
+                
+                <div class="input-group">
+                    <input type="text" id="userId" placeholder="User ID" value="user_001">
+                    <select id="theme">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="auto">Auto</option>
+                    </select>
+                    <button class="btn" onclick="updatePreference()">Update</button>
+                </div>
+                
+                <div class="input-group">
+                    <input type="text" id="deleteUserId" placeholder="User ID to Delete" value="user_001">
+                    <button class="btn btn-danger" onclick="deleteUser()">Delete User</button>
+                </div>
+                
+                <div class="input-group">
+                    <input type="number" id="simUsers" value="10" min="5" max="50" placeholder="Users">
+                    <input type="number" id="simDuration" value="60" min="10" max="300" placeholder="Seconds">
+                    <button class="btn btn-primary" onclick="startCustomSimulation()">Custom Sim</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <div class="card">
+                <h2>👥 Active User Preferences</h2>
+                <div id="userList" class="user-list">
+                    <p>Loading user preferences...</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>📈 Compaction Metrics</h2>
+                <div class="chart-container">
+                    <canvas id="compactionChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card log-container">
+            <h2>📝 System Logs</h2>
+            <div id="logOutput" class="log-output"></div>
+        </div>
+    </div>
+    
+    <!-- Load external scripts at END - non-blocking -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script>
+        // MOVE ALL INIT TO END - PAGE VISIBLE IMMEDIATELY
+        let socket;
+        function initSocket() {
+            if (typeof io === 'undefined') {
+                setTimeout(initSocket, 50);
+                return;
+            }
+            try {
+                socket = io({timeout: 2000, reconnection: true});
+                socket.on('connect_error', function() {});
+                setupSocketHandlers();
+            } catch(e) {}
+        }
+        
+        let compactionChart;
+        let chartData = {
+            labels: [],
+            datasets: [{
+                label: 'Messages Processed',
+                data: [],
+                borderColor: '#74b9ff',
+                backgroundColor: 'rgba(116, 185, 255, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'Active Users',
+                data: [],
+                borderColor: '#00b894',
+                backgroundColor: 'rgba(0, 184, 148, 0.1)',
+                tension: 0.4
+            }]
+        };
+        
+        // Initialize chart
+        function initChart() {
+            const ctx = document.getElementById('compactionChart').getContext('2d');
+            compactionChart = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Socket event handlers - set up when socket is ready
+        function setupSocketHandlers() {
+            if (!socket) return;
+            
+            socket.on('connect', function() {
+                try {
+                    const statusEl = document.getElementById('connectionStatus');
+                    if (statusEl) {
+                        statusEl.textContent = 'Connected';
+                        statusEl.className = 'connection-status connected';
+                    }
+                    addLog('Connected to StreamSocial server');
+                } catch(e) { console.error('Connect handler error:', e); }
+            });
+            
+            socket.on('disconnect', function() {
+                try {
+                    const statusEl = document.getElementById('connectionStatus');
+                    if (statusEl) {
+                        statusEl.textContent = 'Disconnected';
+                        statusEl.className = 'connection-status disconnected';
+                    }
+                    addLog('Disconnected from server');
+                } catch(e) { console.error('Disconnect handler error:', e); }
+            });
+            
+            socket.on('stats_update', function(data) {
+                try {
+                    updateStats(data);
+                    updateChart(data);
+                } catch(e) { console.error('Stats update error:', e); }
+            });
+            
+            socket.on('connected', function(data) {
+                try {
+                    addLog(data.status || 'Connected');
+                } catch(e) { console.error('Connected handler error:', e); }
+            });
+        }
+        
+        // Update statistics display
+        function updateStats(data) {
+            const consumer = data.consumer || {};
+            const producer = data.producer || {};
+            
+            document.getElementById('messageCount').textContent = consumer.message_count || 0;
+            document.getElementById('userCount').textContent = consumer.active_users || 0;
+            document.getElementById('deletedCount').textContent = consumer.deleted_users_count || 0;
+            
+            // Calculate compaction rate
+            const totalMessages = consumer.message_count || 0;
+            const activeUsers = consumer.active_users || 0;
+            const compactionRate = totalMessages > 0 ? Math.round((1 - activeUsers / totalMessages) * 100) : 0;
+            document.getElementById('compactionRate').textContent = compactionRate + '%';
+        }
+        
+        // Update chart
+        function updateChart(data) {
+            const now = new Date().toLocaleTimeString();
+            const consumer = data.consumer || {};
+            
+            chartData.labels.push(now);
+            chartData.datasets[0].data.push(consumer.message_count || 0);
+            chartData.datasets[1].data.push(consumer.active_users || 0);
+            
+            // Keep only last 20 data points
+            if (chartData.labels.length > 20) {
+                chartData.labels.shift();
+                chartData.datasets[0].data.shift();
+                chartData.datasets[1].data.shift();
+            }
+            
+            compactionChart.update('none');
+        }
+        
+        // Load user preferences - FAST with 1 second timeout
+        async function loadPreferences() {
+            const userList = document.getElementById('userList');
+            if (!userList) return;
+            
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 1000); // 1 second ONLY
+                
+                const response = await fetch('/api/preferences', {
+                    signal: controller.signal
+                }).catch(() => null);
+                
+                clearTimeout(timeoutId);
+                
+                if (!response) {
+                    userList.innerHTML = '<p style="color: #74b9ff;">Backend starting... (automatic refresh in 5 sec)</p>';
+                    setTimeout(loadPreferences, 5000);
+                    return;
+                }
+                
+                if (response.status === 503) {
+                    userList.innerHTML = '<p style="color: #74b9ff;">Initializing backend... Will update automatically.</p>';
+                    setTimeout(loadPreferences, 3000);
+                    return;
+                }
+                
+                if (!response.ok) return;
+                
+                const data = await response.json();
+                
+                if (data.preferences && Object.keys(data.preferences).length > 0) {
+                    userList.innerHTML = '';
+                    Object.entries(data.preferences).forEach(([userId, pref]) => {
+                        const userDiv = document.createElement('div');
+                        userDiv.className = 'user-item';
+                        userDiv.innerHTML = `
+                            <div class="user-header">
+                                <span class="user-id">${userId}</span>
+                                <span class="user-version">v${pref.version}</span>
+                            </div>
+                            <div class="user-details">
+                                Theme: ${pref.theme} | Lang: ${pref.language} | 
+                                Email: ${pref.notifications?.email ? '✅' : '❌'} | 
+                                Privacy: ${pref.privacy?.profile_visibility}
+                            </div>
+                        `;
+                        userList.appendChild(userDiv);
+                    });
+                } else {
+                    userList.innerHTML = '<p>No preferences yet. Add some using the form above!</p>';
+                }
+            } catch (error) {
+                userList.innerHTML = '<p style="color: #74b9ff;">Connecting to backend... (auto-refreshing)</p>';
+                setTimeout(loadPreferences, 3000);
+            }
+        }
+        
+        // Add log entry
+        function addLog(message) {
+            const logOutput = document.getElementById('logOutput');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            logOutput.textContent += logEntry;
+            logOutput.scrollTop = logOutput.scrollHeight;
+        }
+        
+        // Control functions
+        function startSimulation() {
+            fetch('/api/simulate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({num_users: 10, duration_seconds: 60})
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 503) {
+                        addLog('Backend still initializing. Please wait a few seconds and try again.');
+                        return;
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                    addLog(`Started simulation: ${data.num_users} users for ${data.duration_seconds}s`);
+                }
+            })
+            .catch(error => addLog('Simulation error: ' + (error.message || 'Backend not ready')));
+        }
+        
+        function startCustomSimulation() {
+            const users = parseInt(document.getElementById('simUsers').value);
+            const duration = parseInt(document.getElementById('simDuration').value);
+            
+            fetch('/api/simulate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({num_users: users, duration_seconds: duration})
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 503) {
+                        addLog('Backend still initializing. Please wait a few seconds and try again.');
+                        return null;
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data) {
+                    addLog(`Started custom simulation: ${data.num_users} users for ${data.duration_seconds}s`);
+                }
+            })
+            .catch(error => addLog('Simulation error: ' + (error.message || 'Backend not ready')));
+        }
+        
+        function updatePreference() {
+            const userId = document.getElementById('userId').value;
+            const theme = document.getElementById('theme').value;
+            
+            const preference = {
+                user_id: userId,
+                theme: theme,
+                language: 'en',
+                timezone: 'UTC',
+                notifications: {
+                    email: Math.random() > 0.5,
+                    push: Math.random() > 0.5,
+                    sms: false
+                },
+                privacy: {
+                    profile_visibility: ['public', 'friends', 'private'][Math.floor(Math.random() * 3)],
+                    show_activity: Math.random() > 0.5,
+                    allow_tagging: Math.random() > 0.5
+                },
+                version: Math.floor(Math.random() * 10) + 1
+            };
+            
+            fetch('/api/preference', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(preference)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 503) {
+                        addLog('Backend still initializing. Please wait and try again.');
+                        return null;
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && !data.error) {
+                    addLog(`Updated preference for ${userId}: ${theme} theme`);
+                    setTimeout(loadPreferences, 1000);
+                } else if (data && data.error) {
+                    addLog('Error: ' + data.error);
+                }
+            })
+            .catch(error => addLog('Update error: ' + (error.message || 'Backend not ready')));
+        }
+        
+        function deleteUser() {
+            const userId = document.getElementById('deleteUserId').value;
+            
+            fetch(`/api/user/${userId}`, {method: 'DELETE'})
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 503) {
+                        addLog('Backend still initializing. Please wait and try again.');
+                        return null;
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && !data.error) {
+                    addLog(`Deleted user ${userId} (tombstone sent)`);
+                    setTimeout(loadPreferences, 1000);
+                } else if (data && data.error) {
+                    addLog('Error: ' + data.error);
+                }
+            })
+            .catch(error => addLog('Delete error: ' + (error.message || 'Backend not ready')));
+        }
+        
+        function rebuildState() {
+            fetch('/api/rebuild-state', {method: 'POST'})
+            .then(response => {
+                if (!response.ok) {
+                    if (response.status === 503) {
+                        addLog('Backend still initializing. Please wait and try again.');
+                        return null;
+                    }
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data && !data.error) {
+                    addLog('State rebuilt from compacted log');
+                    setTimeout(loadPreferences, 1000);
+                } else if (data && data.error) {
+                    addLog('Error: ' + data.error);
+                }
+            })
+            .catch(error => addLog('Rebuild error: ' + (error.message || 'Backend not ready')));
+        }
+        
+        function clearLogs() {
+            document.getElementById('logOutput').textContent = '';
+            addLog('Logs cleared');
+        }
+        
+        // INITIALIZE EVERYTHING AFTER PAGE IS VISIBLE
+        (function() {
+            function initAll() {
+                // Chart
+                if (typeof Chart !== 'undefined') {
+                    try { initChart(); } catch(e) { setTimeout(initAll, 50); return; }
+                } else {
+                    setTimeout(initAll, 50);
+                    return;
+                }
+                
+                // Socket
+                initSocket();
+                
+                // Preferences - with auto-retry
+                loadPreferences();
+                setInterval(() => loadPreferences().catch(() => {}), 10000);
+            }
+            
+            if (document.readyState === 'complete') {
+                setTimeout(initAll, 100);
+            } else {
+                window.addEventListener('load', () => setTimeout(initAll, 100));
+            }
+        })();
+    </script>
+</body>
+</html>
