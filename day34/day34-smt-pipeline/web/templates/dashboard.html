@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMT Pipeline Dashboard - StreamSocial</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔄 Single Message Transformations Dashboard</h1>
+            <p class="subtitle">StreamSocial Data Normalization Pipeline - Day 34</p>
+            <div class="status-badge" id="status">
+                <span class="pulse"></span>
+                Pipeline: <span id="pipeline-status">Initializing...</span>
+            </div>
+        </header>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon">📊</div>
+                <div class="metric-content">
+                    <h3>Total Processed</h3>
+                    <p class="metric-value" id="total-normalized">0</p>
+                    <span class="metric-label">Normalized Events</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">📱</div>
+                <div class="metric-content">
+                    <h3>iOS Events</h3>
+                    <p class="metric-value" id="ios-count">0</p>
+                    <span class="metric-label">From iOS Platform</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">🤖</div>
+                <div class="metric-content">
+                    <h3>Android Events</h3>
+                    <p class="metric-value" id="android-count">0</p>
+                    <span class="metric-label">From Android Platform</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">🌐</div>
+                <div class="metric-content">
+                    <h3>Web Events</h3>
+                    <p class="metric-value" id="web-count">0</p>
+                    <span class="metric-label">From Web Platform</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-section">
+            <div class="chart-card">
+                <h3>📈 Events by Action Type</h3>
+                <div id="action-chart" class="chart-content"></div>
+            </div>
+
+            <div class="chart-card">
+                <h3>🔄 Transformation Pipeline</h3>
+                <div class="pipeline-flow">
+                    <div class="pipeline-stage">
+                        <div class="stage-icon">📱</div>
+                        <div class="stage-name">iOS Raw</div>
+                        <div class="stage-arrow">→</div>
+                    </div>
+                    <div class="pipeline-stage">
+                        <div class="stage-icon">🤖</div>
+                        <div class="stage-name">Android Raw</div>
+                        <div class="stage-arrow">→</div>
+                    </div>
+                    <div class="pipeline-stage">
+                        <div class="stage-icon">🌐</div>
+                        <div class="stage-name">Web Raw</div>
+                        <div class="stage-arrow">→</div>
+                    </div>
+                    <div class="pipeline-stage transform">
+                        <div class="stage-icon">⚙️</div>
+                        <div class="stage-name">SMT Transform</div>
+                        <div class="stage-arrow">→</div>
+                    </div>
+                    <div class="pipeline-stage output">
+                        <div class="stage-icon">✅</div>
+                        <div class="stage-name">Normalized</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="recent-events">
+            <h3>📋 Recent Normalized Events</h3>
+            <div class="events-table-container">
+                <table id="events-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Source</th>
+                            <th>Action</th>
+                            <th>User ID</th>
+                            <th>Post ID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="events-body">
+                        <tr><td colspan="5">Waiting for events...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
