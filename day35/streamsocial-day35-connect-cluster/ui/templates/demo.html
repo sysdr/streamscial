@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial Connect Cluster Dashboard - DEMO</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 25px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            color: #2d3748;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header .subtitle {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .cluster-status {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-left: 15px;
+        }
+
+        .status-healthy { background: #c6f6d5; color: #22543d; }
+        .status-degraded { background: #feebc8; color: #7c2d12; }
+        .status-critical { background: #fed7d7; color: #742a2a; }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .metric-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .metric-card h3 {
+            color: #4a5568;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .metric-label {
+            color: #a0aec0;
+            font-size: 13px;
+        }
+
+        .workers-section, .connectors-section, .rebalance-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .worker-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .worker-card {
+            padding: 18px;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .worker-card.healthy {
+            border-color: #48bb78;
+            background: #f0fff4;
+        }
+
+        .worker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .worker-name {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 15px;
+        }
+
+        .worker-status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-healthy { background: #48bb78; color: white; }
+
+        .worker-tasks {
+            margin-top: 10px;
+        }
+
+        .task-count {
+            color: #718096;
+            font-size: 13px;
+        }
+
+        .connector-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .connector-item {
+            padding: 18px;
+            background: #f7fafc;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .connector-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .connector-name {
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 15px;
+        }
+
+        .connector-state {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .state-running { background: #48bb78; color: white; }
+
+        .task-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .task-badge {
+            padding: 6px 12px;
+            background: white;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+        }
+
+        .rebalance-timeline {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .rebalance-event {
+            padding: 15px;
+            background: #edf2f7;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #ed8936;
+        }
+
+        .rebalance-time {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        .rebalance-details {
+            color: #718096;
+            font-size: 12px;
+        }
+
+        .last-update {
+            text-align: center;
+            color: #a0aec0;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>
+                StreamSocial Connect Cluster Monitor
+                <span class="cluster-status status-healthy">HEALTHY (DEMO)</span>
+            </h1>
+            <p class="subtitle">Real-time distributed worker coordination and fault tolerance monitoring - Demo Data</p>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3>Active Workers</h3>
+                <div class="metric-value">3</div>
+                <div class="metric-label">Total: 3</div>
+            </div>
+            <div class="metric-card">
+                <h3>Active Connectors</h3>
+                <div class="metric-value">3</div>
+                <div class="metric-label">Running connectors</div>
+            </div>
+            <div class="metric-card">
+                <h3>Running Tasks</h3>
+                <div class="metric-value">6</div>
+                <div class="metric-label">Distributed tasks</div>
+            </div>
+            <div class="metric-card">
+                <h3>Rebalance Events</h3>
+                <div class="metric-value">2</div>
+                <div class="metric-label">Last 10 events</div>
+            </div>
+        </div>
+
+        <div class="workers-section">
+            <h2 class="section-title">Worker Status</h2>
+            <div class="worker-grid">
+                <div class="worker-card healthy">
+                    <div class="worker-header">
+                        <div class="worker-name">Worker 1 (connect-worker-1:8083)</div>
+                        <span class="worker-status-badge badge-healthy">HEALTHY</span>
+                    </div>
+                    <div class="worker-tasks">
+                        <div class="task-count">3 tasks assigned</div>
+                    </div>
+                </div>
+                
+                <div class="worker-card healthy">
+                    <div class="worker-header">
+                        <div class="worker-name">Worker 2 (connect-worker-2:8083)</div>
+                        <span class="worker-status-badge badge-healthy">HEALTHY</span>
+                    </div>
+                    <div class="worker-tasks">
+                        <div class="task-count">2 tasks assigned</div>
+                    </div>
+                </div>
+                
+                <div class="worker-card healthy">
+                    <div class="worker-header">
+                        <div class="worker-name">Worker 3 (connect-worker-3:8083)</div>
+                        <span class="worker-status-badge badge-healthy">HEALTHY</span>
+                    </div>
+                    <div class="worker-tasks">
+                        <div class="task-count">1 task assigned</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="connectors-section">
+            <h2 class="section-title">Connectors & Task Distribution</h2>
+            <div class="connector-list">
+                <div class="connector-item">
+                    <div class="connector-header">
+                        <div class="connector-name">streamsocial-posts-source</div>
+                        <span class="connector-state state-running">RUNNING</span>
+                    </div>
+                    <div class="task-list">
+                        <span class="task-badge">Task 0: RUNNING on worker-1</span>
+                        <span class="task-badge">Task 1: RUNNING on worker-2</span>
+                        <span class="task-badge">Task 2: RUNNING on worker-3</span>
+                    </div>
+                </div>
+                
+                <div class="connector-item">
+                    <div class="connector-header">
+                        <div class="connector-name">streamsocial-comments-source</div>
+                        <span class="connector-state state-running">RUNNING</span>
+                    </div>
+                    <div class="task-list">
+                        <span class="task-badge">Task 0: RUNNING on worker-1</span>
+                        <span class="task-badge">Task 1: RUNNING on worker-2</span>
+                    </div>
+                </div>
+                
+                <div class="connector-item">
+                    <div class="connector-header">
+                        <div class="connector-name">streamsocial-media-source</div>
+                        <span class="connector-state state-running">RUNNING</span>
+                    </div>
+                    <div class="task-list">
+                        <span class="task-badge">Task 0: RUNNING on worker-3</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="rebalance-section">
+            <h2 class="section-title">Rebalance Timeline</h2>
+            <div class="rebalance-timeline">
+                <div class="rebalance-event">
+                    <div class="rebalance-time">Just now - Initial task distribution</div>
+                    <div class="rebalance-details">
+                        Task redistribution detected - 6 tasks distributed across 3 workers. Each worker received tasks based on capacity and current load for optimal throughput.
+                    </div>
+                </div>
+                <div class="rebalance-event">
+                    <div class="rebalance-time">Startup - Cluster formation</div>
+                    <div class="rebalance-details">
+                        Connect cluster initialized with 3 workers (connect-worker-1, connect-worker-2, connect-worker-3). Tasks balanced for optimal throughput and fault tolerance.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="last-update">
+            Last updated: <strong>Demo Mode</strong> - Static demo data showing typical cluster operation
+        </div>
+    </div>
+</body>
+</html>
+

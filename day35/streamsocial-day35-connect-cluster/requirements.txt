@@ -1,0 +1,12 @@
+kafka-python==2.0.2
+confluent-kafka==2.3.0
+flask==3.0.2
+flask-cors==4.0.0
+flask-socketio==5.3.6
+psycopg2-binary==2.9.9
+requests==2.31.0
+python-socketio==5.11.1
+pyyaml==6.0.1
+prometheus-client==0.20.0
+pytest==8.0.2
+pytest-asyncio==0.23.5
