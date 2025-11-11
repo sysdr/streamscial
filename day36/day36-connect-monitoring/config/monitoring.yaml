@@ -1,0 +1,44 @@
+monitoring:
+  scrape_interval: 15
+  retention_days: 7
+  
+connectors:
+  - name: instagram-source
+    type: source
+    topics:
+      - instagram-posts
+  - name: twitter-source
+    type: source
+    topics:
+      - twitter-posts
+  - name: linkedin-source
+    type: source
+    topics:
+      - linkedin-posts
+
+alerts:
+  - name: high_error_rate
+    condition: error_rate > 0.05
+    duration: 120
+    severity: P0
+  - name: task_failure
+    condition: failed_tasks > 0
+    duration: 30
+    severity: P1
+  - name: high_lag
+    condition: lag_seconds > 600
+    duration: 120
+    severity: P0
+  - name: throughput_drop
+    condition: throughput_drop > 0.3
+    duration: 300
+    severity: P1
+  - name: rebalance_storm
+    condition: rebalances_per_minute > 2
+    duration: 60
+    severity: P1
+
+health_score:
+  error_weight: 0.4
+  task_weight: 0.3
+  lag_weight: 0.3
