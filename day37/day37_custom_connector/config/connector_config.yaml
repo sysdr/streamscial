@@ -1,0 +1,41 @@
+connector:
+  name: "social-stream-connector"
+  connector_class: "SocialStreamConnector"
+  tasks_max: 4
+  
+platforms:
+  twitter:
+    enabled: true
+    api_base: "https://api.twitter.com/2"
+    rate_limit: 900  # requests per 15 min
+    poll_interval_ms: 60000
+    
+  linkedin:
+    enabled: true
+    api_base: "https://api.linkedin.com/v2"
+    rate_limit: 100  # requests per hour
+    poll_interval_ms: 120000
+    
+kafka:
+  bootstrap_servers: "localhost:9092"
+  topic: "social-posts"
+  producer_config:
+    acks: "all"
+    'compression.type': "snappy"
+    'max.in.flight.requests.per.connection': 5
+    'enable.idempotence': true
+    
+monitoring:
+  port: 8080
+  metrics_interval_seconds: 10
+  
+accounts:
+  - platform: "twitter"
+    account_id: "user_12345"
+    credentials:
+      access_token: "twitter_token_abc123"
+      
+  - platform: "linkedin"  
+    account_id: "user_67890"
+    credentials:
+      access_token: "linkedin_token_xyz789"
