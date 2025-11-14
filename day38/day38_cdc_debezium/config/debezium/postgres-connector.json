@@ -1,0 +1,28 @@
+{
+  "name": "user-profiles-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "admin",
+    "database.password": "admin123",
+    "database.dbname": "streamsocial",
+    "database.server.name": "streamsocial",
+    "topic.prefix": "streamsocial",
+    "table.include.list": "public.user_profiles",
+    "plugin.name": "pgoutput",
+    "publication.autocreate.mode": "filtered",
+    "slot.name": "debezium_user_profiles",
+    "heartbeat.interval.ms": "10000",
+    "snapshot.mode": "initial",
+    "tombstones.on.delete": "true",
+    "key.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "key.converter.schemas.enable": "false",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "true",
+    "transforms": "route",
+    "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.route.regex": "([^.]+)\\.([^.]+)\\.([^.]+)",
+    "transforms.route.replacement": "cdc.$3"
+  }
+}
