@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial ML Training Data Sync Monitor</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ML Training Data Sync Monitor</h1>
+            <div class="status-indicator">
+                <span id="connection-status" class="status-dot"></span>
+                <span id="connection-text">Connecting...</span>
+            </div>
+        </header>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <h3>Active Connectors</h3>
+                <div id="connector-count" class="metric-value">0</div>
+            </div>
+            <div class="metric-card">
+                <h3>Running Tasks</h3>
+                <div id="task-count" class="metric-value">0</div>
+            </div>
+            <div class="metric-card">
+                <h3>Failed Tasks</h3>
+                <div id="failed-count" class="metric-value error">0</div>
+            </div>
+            <div class="metric-card">
+                <h3>Last Update</h3>
+                <div id="last-update" class="metric-value small">--</div>
+            </div>
+        </div>
+        
+        <div class="demo-data-section">
+            <h2>Demo Data Statistics</h2>
+            <div class="demo-stats-grid">
+                <div class="demo-stat-card clickable-stat" onclick="focusOnUsers()">
+                    <h3>User Profiles</h3>
+                    <div id="demo-user-count" class="demo-stat-value">0</div>
+                    <div class="demo-stat-detail">Avg Followers: <span id="demo-avg-followers">0</span></div>
+                    <div class="demo-stat-detail">Avg Engagement: <span id="demo-avg-engagement">0</span></div>
+                </div>
+                <div class="demo-stat-card clickable-stat" onclick="focusOnContent()">
+                    <h3>Content Metadata</h3>
+                    <div id="demo-content-count" class="demo-stat-value">0</div>
+                    <div class="demo-stat-detail">Avg Views: <span id="demo-avg-views">0</span></div>
+                </div>
+                <div class="demo-stat-card clickable-stat" onclick="focusOnInteractions()">
+                    <h3>User Interactions</h3>
+                    <div id="demo-interaction-count" class="demo-stat-value">0</div>
+                </div>
+            </div>
+            
+            <div class="demo-tables-section">
+                <div class="demo-table-container">
+                    <h3>Sample User Profiles</h3>
+                    <div class="table-controls">
+                        <button onclick="loadDemoUsers(0)" class="btn btn-sm">First 10</button>
+                        <button onclick="loadDemoUsers(10)" class="btn btn-sm">Next 10</button>
+                        <button onclick="loadDemoUsers(20)" class="btn btn-sm">Next 10</button>
+                    </div>
+                    <div id="demo-users-table" class="demo-table"></div>
+                </div>
+                
+                <div class="demo-table-container">
+                    <h3>Sample Content Metadata</h3>
+                    <div class="table-controls">
+                        <button onclick="loadDemoContent(0)" class="btn btn-sm">First 10</button>
+                        <button onclick="loadDemoContent(10)" class="btn btn-sm">Next 10</button>
+                        <button onclick="loadDemoContent(20)" class="btn btn-sm">Next 10</button>
+                    </div>
+                    <div id="demo-content-table" class="demo-table"></div>
+                </div>
+                
+                <div class="demo-table-container">
+                    <h3>Sample User Interactions</h3>
+                    <div class="table-controls">
+                        <button onclick="loadDemoInteractions(0)" class="btn btn-sm">First 10</button>
+                        <button onclick="loadDemoInteractions(10)" class="btn btn-sm">Next 10</button>
+                        <button onclick="loadDemoInteractions(20)" class="btn btn-sm">Next 10</button>
+                    </div>
+                    <div id="demo-interactions-table" class="demo-table"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="charts-section">
+            <div class="chart-container">
+                <h3>Connector Status History</h3>
+                <canvas id="status-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="connectors-demo-section">
+            <h2>Connectors & Tasks</h2>
+            <div class="connector-stats-grid">
+                <div class="demo-stat-card clickable-stat" onclick="focusOnConnectors()">
+                    <h3>Active Connectors</h3>
+                    <div id="connector-total-count" class="demo-stat-value">0</div>
+                </div>
+                <div class="demo-stat-card clickable-stat" onclick="focusOnTasks()">
+                    <h3>Running Tasks</h3>
+                    <div id="running-tasks-count" class="demo-stat-value">0</div>
+                </div>
+                <div class="demo-stat-card clickable-stat" onclick="focusOnFailedTasks()">
+                    <h3>Failed Tasks</h3>
+                    <div id="failed-tasks-count" class="demo-stat-value error">0</div>
+                </div>
+                <div class="demo-stat-card">
+                    <h3>Total Tasks</h3>
+                    <div id="total-tasks-count" class="demo-stat-value">0</div>
+                </div>
+            </div>
+            
+            <div class="connectors-tables-section">
+                <div class="demo-table-container">
+                    <h3>Connectors List</h3>
+                    <div class="table-controls">
+                        <button onclick="loadConnectors()" class="btn btn-sm">Refresh</button>
+                    </div>
+                    <div id="connectors-demo-table" class="demo-table"></div>
+                </div>
+                
+                <div class="demo-table-container">
+                    <h3>All Tasks</h3>
+                    <div class="table-controls">
+                        <button onclick="loadAllTasks()" class="btn btn-sm">Refresh</button>
+                        <button onclick="loadAllTasks('RUNNING')" class="btn btn-sm">Running Only</button>
+                        <button onclick="loadAllTasks('FAILED')" class="btn btn-sm">Failed Only</button>
+                    </div>
+                    <div id="tasks-demo-table" class="demo-table"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="connectors-section">
+            <h2>Connector Details (Legacy View)</h2>
+            <div id="connectors-list" class="connectors-grid"></div>
+        </div>
+        
+        <div class="actions-section">
+            <h2>Actions</h2>
+            <div class="action-buttons">
+                <button onclick="refreshMetrics()" class="btn btn-primary">Refresh Now</button>
+                <button onclick="restartAllConnectors()" class="btn btn-warning">Restart All</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detail Modal -->
+    <div id="detail-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeDetailModal()">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+    
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
