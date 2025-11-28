@@ -1,0 +1,19 @@
+{
+  "name": "content-moderation-sink",
+  "config": {
+    "connector.class": "ModerationSinkConnector",
+    "topics": "user-posts",
+    "tasks.max": "3",
+    "errors.tolerance": "all",
+    "errors.log.enable": "true",
+    "errors.log.include.messages": "true",
+    "errors.deadletterqueue.topic.name": "moderation-dlq",
+    "errors.deadletterqueue.topic.replication.factor": "1",
+    "errors.deadletterqueue.context.headers.enable": "true",
+    "errors.retry.timeout": "300000",
+    "errors.retry.delay.max.ms": "60000",
+    "moderation.circuit.breaker.enabled": "true",
+    "moderation.circuit.breaker.failure.threshold": "50",
+    "moderation.circuit.breaker.reset.timeout": "120000"
+  }
+}

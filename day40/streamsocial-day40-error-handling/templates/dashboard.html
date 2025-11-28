@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial Error Handling Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            padding: 20px;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            width: 100%;
+            position: relative;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e8e8e8;
+            margin-bottom: 25px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .header h1 {
+            color: #1a1a1a;
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        @media (max-width: 768px) {
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e8e8e8;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            border-color: #d0d0d0;
+        }
+        
+        .metric-label {
+            color: #666;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .metric-value {
+            color: #333;
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .metric-status {
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+        
+        .status-good {
+            background: #d5f4e6;
+            color: #27ae60;
+            font-weight: 500;
+        }
+        
+        .status-warning {
+            background: #fef5e7;
+            color: #e67e22;
+            font-weight: 500;
+        }
+        
+        .status-error {
+            background: #fadbd8;
+            color: #e74c3c;
+            font-weight: 500;
+        }
+        
+        .data-table {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e8e8e8;
+            margin-bottom: 25px;
+            overflow-x: auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        @media (max-width: 768px) {
+            .data-table {
+                padding: 15px;
+            }
+            
+            table {
+                font-size: 14px;
+            }
+            
+            th, td {
+                padding: 10px 8px;
+            }
+        }
+        
+        .table-header {
+            color: #1a1a1a;
+            font-size: 20px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e8e8e8;
+            font-weight: 600;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto;
+            max-width: 100%;
+        }
+        
+        th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #666;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .error-badge {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .badge-timeout {
+            background: #fef5e7;
+            color: #e67e22;
+        }
+        
+        .badge-unicode {
+            background: #fadbd8;
+            color: #e74c3c;
+        }
+        
+        .badge-service {
+            background: #ebf5fb;
+            color: #2c3e50;
+        }
+        
+        .refresh-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            font-size: 12px;
+            color: #666;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: calc(100vw - 40px);
+            box-sizing: border-box;
+        }
+        
+        .refresh-toggle {
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: background 0.3s;
+            font-weight: 500;
+        }
+        
+        .refresh-toggle:hover {
+            background: #34495e;
+        }
+        
+        .refresh-toggle.paused {
+            background: #999;
+        }
+        
+        .refresh-toggle.paused:hover {
+            background: #777;
+        }
+        
+        @media (max-width: 768px) {
+            .refresh-indicator {
+                top: 10px;
+                right: 10px;
+                padding: 8px 15px;
+                font-size: 11px;
+            }
+        }
+        
+        .pulse {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #4CAF50;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #e8e8e8;
+            margin-bottom: 25px;
+            display: block;
+            height: 280px !important;
+            max-height: 280px !important;
+            min-height: 280px !important;
+            overflow: hidden !important;
+            position: relative;
+            box-sizing: border-box;
+            width: 100%;
+            contain: layout style paint;
+        }
+        
+        .chart-container .table-header {
+            flex-shrink: 0;
+            margin-bottom: 10px;
+            height: 30px;
+            width: 100%;
+            font-size: 18px;
+            line-height: 30px;
+        }
+        
+        .chart-wrapper {
+            height: 230px !important;
+            max-height: 230px !important;
+            min-height: 230px !important;
+            overflow: hidden !important;
+            position: relative;
+            box-sizing: border-box;
+            width: 100% !important;
+            max-width: 100% !important;
+            contain: strict;
+        }
+        
+        #errorChart {
+            max-width: 100% !important;
+            max-height: 230px !important;
+            width: 100% !important;
+            height: 230px !important;
+            box-sizing: border-box !important;
+            display: block !important;
+            position: relative !important;
+            contain: strict !important;
+        }
+        
+        /* Force canvas to stay at fixed size - override Chart.js */
+        canvas#errorChart {
+            height: 230px !important;
+            max-height: 230px !important;
+            min-height: 230px !important;
+        }
+        
+        canvas#errorChart[height] {
+            height: 230px !important;
+        }
+        
+        .chart-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 230px;
+            max-height: 230px;
+            min-height: 230px;
+            color: #999;
+            font-style: italic;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            font-size: 12px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .status-info {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ StreamSocial Error Handling Dashboard</h1>
+            <p>Real-time monitoring of content moderation error handling and DLQ processing</p>
+        </div>
+        
+        <div class="refresh-indicator">
+            <span class="pulse" id="pulseIndicator"></span>
+            <span id="refreshStatus">Live Updates</span>
+            <button class="refresh-toggle" id="refreshToggle" onclick="toggleAutoRefresh()">Pause</button>
+        </div>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Active Retries</div>
+                <div class="metric-value" id="activeRetries">-</div>
+                <div class="metric-status status-good" id="retryStatus">Normal</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Permanent Failures</div>
+                <div class="metric-value" id="permanentFailuresCount">-</div>
+                <div class="metric-status status-warning" id="failureStatus">Monitoring</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">DLQ Partitions</div>
+                <div class="metric-value" id="dlqPartitions">-</div>
+                <div class="metric-status status-good">Active</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Error Rate</div>
+                <div class="metric-value" id="errorRate">-</div>
+                <div class="metric-status status-good" id="errorRateStatus">Healthy</div>
+            </div>
+        </div>
+        
+        <div class="chart-container" style="height: 280px !important; max-height: 280px !important; min-height: 280px !important; overflow: hidden !important;">
+            <div class="table-header">Error Type Distribution</div>
+            <div id="chartEmpty" class="chart-empty" style="display: none;">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📊</div>
+                    <div>No error data available</div>
+                    <div class="status-info">Start the services to see error statistics</div>
+                </div>
+            </div>
+            <div id="chartWrapper" class="chart-wrapper" style="display: block; height: 230px !important; max-height: 230px !important; min-height: 230px !important; overflow: hidden !important;">
+                <canvas id="errorChart" style="height: 230px !important; max-height: 230px !important; width: 100% !important;"></canvas>
+            </div>
+        </div>
+        
+        <div class="data-table">
+            <div class="table-header">Recent DLQ Records</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Record ID</th>
+                        <th>Timestamp</th>
+                        <th>Error Type</th>
+                        <th>Error Message</th>
+                        <th>Content Preview</th>
+                    </tr>
+                </thead>
+                <tbody id="dlqRecords">
+                    <tr><td colspan="5" style="text-align: center; color: #999;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="data-table">
+            <div class="table-header">Permanent Failures (Manual Review Required)</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Record ID</th>
+                        <th>Failed At</th>
+                        <th>Error Type</th>
+                        <th>Retry Attempts</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="permanentFailuresTable">
+                    <tr><td colspan="5" style="text-align: center; color: #999;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        let errorChart;
+        
+        function initChart() {
+            const ctx = document.getElementById('errorChart').getContext('2d');
+            const chartWrapper = document.getElementById('chartWrapper');
+            const canvas = document.getElementById('errorChart');
+            const chartContainer = document.querySelector('.chart-container');
+            
+            // Enforce strict dimensions before chart creation
+            enforceChartConstraints();
+            
+            // Set canvas attributes directly
+            if (canvas) {
+                canvas.setAttribute('height', '230');
+                canvas.style.height = '230px';
+                canvas.style.maxHeight = '230px';
+                const containerWidth = chartContainer ? chartContainer.offsetWidth - 40 : 800;
+                canvas.setAttribute('width', containerWidth.toString());
+            }
+            
+            // Initialize with demo time-series data for real-time look
+            const now = new Date();
+            const timeLabels = [];
+            const errorData = [];
+            
+            // Generate last 20 time points (every 30 seconds)
+            for (let i = 19; i >= 0; i--) {
+                const time = new Date(now.getTime() - i * 30000);
+                timeLabels.push(time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                // Start with some demo data
+                errorData.push(Math.floor(Math.random() * 5));
+            }
+            
+            errorChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Error Count',
+                        data: [],
+                        backgroundColor: [
+                            'rgba(231, 76, 60, 0.8)',
+                            'rgba(230, 126, 34, 0.8)',
+                            'rgba(241, 196, 15, 0.8)',
+                            'rgba(46, 204, 113, 0.8)',
+                            'rgba(52, 152, 219, 0.8)',
+                            'rgba(155, 89, 182, 0.8)',
+                        ],
+                        borderColor: [
+                            'rgba(231, 76, 60, 1)',
+                            'rgba(230, 126, 34, 1)',
+                            'rgba(241, 196, 15, 1)',
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(52, 152, 219, 1)',
+                            'rgba(155, 89, 182, 1)',
+                        ],
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    maintainAspectRatio: false,
+                    resizeDelay: 0,
+                    animation: {
+                        duration: 500
+                    },
+                    onResize: null,
+                    layout: {
+                        padding: {
+                            top: 5,
+                            bottom: 5,
+                            left: 5,
+                            right: 5
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: 'rgba(44, 62, 80, 0.95)',
+                            padding: 10,
+                            titleFont: { size: 12, weight: 'bold' },
+                            bodyFont: { size: 11 },
+                            cornerRadius: 6,
+                            displayColors: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                maxTicksLimit: 4,
+                                stepSize: 1,
+                                font: {
+                                    size: 9
+                                },
+                                color: '#7f8c8d'
+                            },
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.05)',
+                                drawBorder: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 6,
+                                font: {
+                                    size: 9
+                                },
+                                color: '#7f8c8d'
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Override Chart.js resize method to prevent it from changing canvas size
+            if (errorChart && errorChart.resize) {
+                const originalResize = errorChart.resize.bind(errorChart);
+                errorChart.resize = function() {
+                    enforceChartConstraints();
+                    // Don't call original resize as it causes the huge height
+                };
+            }
+            
+            // Force constraints immediately
+            enforceChartConstraints();
+            
+            // Set up continuous monitoring with cleanup
+            let constraintInterval = setInterval(() => {
+                enforceChartConstraints();
+            }, 500);
+            
+            // Store interval for cleanup
+            window.chartConstraintInterval = constraintInterval;
+        }
+        
+        function enforceChartConstraints() {
+            const chartWrapper = document.getElementById('chartWrapper');
+            const chartContainer = document.querySelector('.chart-container');
+            const canvas = document.getElementById('errorChart');
+            
+            if (chartContainer) {
+                chartContainer.style.setProperty('height', '280px', 'important');
+                chartContainer.style.setProperty('max-height', '280px', 'important');
+                chartContainer.style.setProperty('min-height', '280px', 'important');
+                chartContainer.style.setProperty('overflow', 'hidden', 'important');
+            }
+            
+            if (chartWrapper) {
+                chartWrapper.style.setProperty('height', '230px', 'important');
+                chartWrapper.style.setProperty('max-height', '230px', 'important');
+                chartWrapper.style.setProperty('min-height', '230px', 'important');
+                chartWrapper.style.setProperty('width', '100%', 'important');
+                chartWrapper.style.setProperty('max-width', '100%', 'important');
+                chartWrapper.style.setProperty('overflow', 'hidden', 'important');
+            }
+            
+            if (canvas) {
+                // CRITICAL: Force canvas height attribute and style
+                const currentHeight = canvas.getAttribute('height');
+                if (!currentHeight || parseInt(currentHeight) > 250) {
+                    canvas.setAttribute('height', '230');
+                }
+                canvas.style.setProperty('height', '230px', 'important');
+                canvas.style.setProperty('max-height', '230px', 'important');
+                canvas.style.setProperty('min-height', '230px', 'important');
+                canvas.style.setProperty('width', '100%', 'important');
+                canvas.style.setProperty('max-width', '100%', 'important');
+                
+                // Calculate width based on container
+                const containerWidth = chartContainer ? Math.max(chartContainer.offsetWidth - 40, 400) : 800;
+                canvas.setAttribute('width', containerWidth.toString());
+            }
+            
+            // Don't call errorChart.resize() as it causes the issue
+        }
+        
+        function updateChart(errorBreakdown) {
+            const labels = Object.keys(errorBreakdown || {});
+            const data = Object.values(errorBreakdown || {});
+            const chartEmpty = document.getElementById('chartEmpty');
+            const chartWrapper = document.getElementById('chartWrapper');
+            const canvas = document.getElementById('errorChart');
+            
+            // Check if chart already has data - don't hide if it does
+            const hasExistingData = errorChart && errorChart.data && errorChart.data.labels && errorChart.data.labels.length > 0;
+            const hasNewData = labels.length > 0 && !data.every(v => v === 0);
+            
+            // Enforce fixed height on wrapper BEFORE any updates
+            enforceChartConstraints();
+            
+            // Only show empty state if there's truly no data AND no existing data in chart
+            if (!hasNewData && !hasExistingData) {
+                // Show empty state only if chart was never populated
+                if (chartEmpty) chartEmpty.style.display = 'flex';
+                if (chartWrapper) chartWrapper.style.display = 'none';
+                return;
+            }
+            
+            // Always show chart if we have data or existing data
+            if (chartEmpty) chartEmpty.style.display = 'none';
+            if (chartWrapper) chartWrapper.style.display = 'block';
+            
+            // If we have new data, update the chart
+            if (hasNewData) {
+                // Re-enforce constraints before updating
+                if (canvas) {
+                    canvas.setAttribute('height', '230');
+                    canvas.style.setProperty('height', '230px', 'important');
+                    canvas.style.setProperty('max-height', '230px', 'important');
+                }
+                
+                errorChart.data.labels = labels;
+                errorChart.data.datasets[0].data = data;
+                
+                // Enforce constraints BEFORE update
+                enforceChartConstraints();
+                
+                // Update chart without animation to prevent flickering
+                errorChart.update('none');
+                
+                // Force constraints AFTER update
+                setTimeout(() => {
+                    enforceChartConstraints();
+                    if (canvas) {
+                        canvas.setAttribute('height', '230');
+                        canvas.style.setProperty('height', '230px', 'important');
+                    }
+                }, 10);
+            } else {
+                // If no new data but chart has existing data, just keep it visible
+                // Don't update the chart data, just ensure it stays visible
+                enforceChartConstraints();
+            }
+        }
+        
+        function getErrorBadgeClass(errorType) {
+            if (errorType.includes('Timeout')) return 'badge-timeout';
+            if (errorType.includes('Unicode')) return 'badge-unicode';
+            return 'badge-service';
+        }
+        
+        function updateMetrics() {
+            // Add delay to slow down data loading
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    fetch('/api/metrics')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                .then(data => {
+                    // Update metric values
+                    const activeRetriesEl = document.getElementById('activeRetries');
+                    const permanentFailuresEl = document.getElementById('permanentFailuresCount');
+                    const dlqPartitionsEl = document.getElementById('dlqPartitions');
+                    const errorRateEl = document.getElementById('errorRate');
+                    
+                    if (activeRetriesEl) activeRetriesEl.textContent = data.active_retries || 0;
+                    if (permanentFailuresEl) permanentFailuresEl.textContent = data.permanent_failures || 0;
+                    if (dlqPartitionsEl) dlqPartitionsEl.textContent = data.dlq_partitions || 0;
+                    
+                    // Calculate error rate (percentage of total messages with errors)
+                    const totalErrors = Object.values(data.error_breakdown || {}).reduce((a, b) => a + b, 0);
+                    const totalMessages = (data.active_retries || 0) + (data.permanent_failures || 0) + totalErrors;
+                    const errorRate = totalMessages > 0 ? ((totalErrors / totalMessages) * 100).toFixed(1) : '0.0';
+                    if (errorRateEl) errorRateEl.textContent = errorRate + '%';
+                    
+                    // Update retry status
+                    const retryStatusEl = document.getElementById('retryStatus');
+                    if (retryStatusEl) {
+                        if (data.active_retries > 50) {
+                            retryStatusEl.className = 'metric-status status-warning';
+                            retryStatusEl.textContent = 'High Load';
+                        } else if (data.active_retries > 0) {
+                            retryStatusEl.className = 'metric-status status-good';
+                            retryStatusEl.textContent = 'Active';
+                        } else {
+                            retryStatusEl.className = 'metric-status status-good';
+                            retryStatusEl.textContent = 'Normal';
+                        }
+                    }
+                    
+                    // Update failure status
+                    const failureStatusEl = document.getElementById('failureStatus');
+                    if (failureStatusEl) {
+                        if (data.permanent_failures > 0) {
+                            failureStatusEl.className = 'metric-status status-error';
+                            failureStatusEl.textContent = 'Action Required';
+                        } else {
+                            failureStatusEl.className = 'metric-status status-good';
+                            failureStatusEl.textContent = 'No Failures';
+                        }
+                    }
+                    
+                    // Don't update chart automatically - only update on initial load
+                    // updateChart(data.error_breakdown || {});
+                })
+                .catch(error => {
+                    console.error('Error fetching metrics:', error);
+                    // Show error state in UI
+                    const errorMsg = document.getElementById('activeRetries');
+                    if (errorMsg && errorMsg.textContent === '-') {
+                        errorMsg.textContent = 'Error';
+                    }
+                    resolve();
+                });
+            }, 500); // 500ms delay before loading
+            });
+        }
+        
+        function updateDLQRecords() {
+            // Add delay to slow down data loading
+            setTimeout(() => {
+                fetch('/api/dlq/records')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                .then(data => {
+                    const tbody = document.getElementById('dlqRecords');
+                    if (!tbody) return;
+                    
+                    if (!data.records || data.records.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: #999;"><div class="empty-state-icon">📭</div><div>No DLQ records</div><div class="status-info">All messages processed successfully</div></td></tr>';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = data.records.map(record => `
+                        <tr>
+                            <td><strong>${escapeHtml(record.key || 'N/A')}</strong></td>
+                            <td>${escapeHtml(record.timestamp || 'N/A')}</td>
+                            <td><span class="error-badge ${getErrorBadgeClass(record.error_type || 'Unknown')}">${escapeHtml(record.error_type || 'Unknown')}</span></td>
+                            <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(record.error_message || '')}">${escapeHtml(record.error_message || 'N/A')}</td>
+                            <td style="font-style: italic; color: #999; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(record.content_preview || 'N/A')}</td>
+                        </tr>
+                    `).join('');
+                })
+                .catch(error => {
+                    console.error('Error fetching DLQ records:', error);
+                    const tbody = document.getElementById('dlqRecords');
+                    if (tbody) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #f00;">Error loading DLQ records</td></tr>';
+                    }
+                });
+            }, 600); // 600ms delay before loading
+        }
+        
+        function updatePermanentFailures() {
+            try {
+                // Add delay to slow down data loading
+                setTimeout(() => {
+                    fetch('/api/permanent-failures')
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok');
+                            }
+                            return response.json();
+                        })
+                    .then(data => {
+                        const tbody = document.getElementById('permanentFailuresTable');
+                        if (!tbody) {
+                            console.error('permanentFailuresTable tbody not found');
+                            return;
+                        }
+                        
+                        if (!data || !data.failures || data.failures.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: #999;"><div class="empty-state-icon">✅</div><div>No permanent failures</div><div class="status-info">All retries successful or pending</div></td></tr>';
+                            return;
+                        }
+                        
+                        tbody.innerHTML = data.failures.map(failure => `
+                            <tr>
+                                <td><strong>${escapeHtml(failure.record_id || 'N/A')}</strong></td>
+                                <td>${escapeHtml(failure.failed_at || 'N/A')}</td>
+                                <td><span class="error-badge badge-service">${escapeHtml(failure.error_type || 'Unknown')}</span></td>
+                                <td>${escapeHtml(failure.retry_attempts || '0')}</td>
+                                <td><button onclick="alert('Manual retry feature coming soon')" style="padding: 5px 15px; background: #2c3e50; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background 0.3s; font-weight: 500;" onmouseover="this.style.background='#34495e'" onmouseout="this.style.background='#2c3e50'">Manual Retry</button></td>
+                            </tr>
+                        `).join('');
+                    })
+                    .catch(error => {
+                        console.error('Error fetching permanent failures:', error);
+                        const tbody = document.getElementById('permanentFailuresTable');
+                        if (tbody) {
+                            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: #999;"><div class="empty-state-icon">⚠️</div><div>Error loading permanent failures</div><div class="status-info">Please refresh the page</div></td></tr>';
+                        }
+                    });
+                }, 700); // 700ms delay before loading
+            } catch (error) {
+                console.error('Error in updatePermanentFailures:', error);
+                const tbody = document.getElementById('permanentFailuresTable');
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 40px; color: #999;"><div class="empty-state-icon">⚠️</div><div>Error loading permanent failures</div><div class="status-info">Please refresh the page</div></td></tr>';
+                }
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Auto-refresh control
+        let refreshInterval = null;
+        let isAutoRefreshEnabled = true;
+        const REFRESH_INTERVAL_MS = 15000; // 15 seconds - refresh interval
+        
+        function startAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+            refreshInterval = setInterval(() => {
+                if (isAutoRefreshEnabled) {
+                    updateMetrics();
+                    updateDLQRecords();
+                    updatePermanentFailures();
+                }
+            }, REFRESH_INTERVAL_MS);
+        }
+        
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+        
+        function toggleAutoRefresh() {
+            isAutoRefreshEnabled = !isAutoRefreshEnabled;
+            const toggleBtn = document.getElementById('refreshToggle');
+            const pulseIndicator = document.getElementById('pulseIndicator');
+            const refreshStatus = document.getElementById('refreshStatus');
+            
+            if (isAutoRefreshEnabled) {
+                toggleBtn.textContent = 'Pause';
+                toggleBtn.classList.remove('paused');
+                pulseIndicator.style.display = 'inline-block';
+                refreshStatus.textContent = 'Live Updates';
+                startAutoRefresh();
+            } else {
+                toggleBtn.textContent = 'Resume';
+                toggleBtn.classList.add('paused');
+                pulseIndicator.style.display = 'none';
+                refreshStatus.textContent = 'Paused';
+                stopAutoRefresh();
+            }
+        }
+        
+        // Initialize - call immediately and then set interval
+        initChart();
+        
+        // Initial load with staggered delays to slow down loading
+        // Load chart data only once on initial load
+        setTimeout(() => {
+            fetch('/api/metrics')
+                .then(response => response.json())
+                .then(data => {
+                    updateChart(data.error_breakdown || {});
+                })
+                .catch(error => {
+                    console.error('Error loading initial chart data:', error);
+                });
+        }, 500);
+        
+        setTimeout(() => updateMetrics(), 300);
+        setTimeout(() => updateDLQRecords(), 400);
+        setTimeout(() => updatePermanentFailures(), 500);
+        
+        // Start auto-refresh (every 10 seconds)
+        startAutoRefresh();
+        
+        // Enforce chart constraints on window resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                enforceChartConstraints();
+            }, 250);
+        });
+        
+        // Enforce constraints on initial load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                enforceChartConstraints();
+            }, 200);
+        });
+        
+        // Use MutationObserver to watch for canvas attribute changes
+        let canvasObserver = null;
+        const canvas = document.getElementById('errorChart');
+        if (canvas) {
+            canvasObserver = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes') {
+                        if (mutation.attributeName === 'height') {
+                            const height = canvas.getAttribute('height');
+                            if (height && parseInt(height) > 250) {
+                                canvas.setAttribute('height', '230');
+                                canvas.style.setProperty('height', '230px', 'important');
+                                canvas.style.setProperty('max-height', '230px', 'important');
+                            }
+                        }
+                        // Also check style changes
+                        if (mutation.attributeName === 'style') {
+                            const computedHeight = window.getComputedStyle(canvas).height;
+                            const heightValue = parseInt(computedHeight);
+                            if (heightValue > 250) {
+                                canvas.setAttribute('height', '230');
+                                canvas.style.setProperty('height', '230px', 'important');
+                                canvas.style.setProperty('max-height', '230px', 'important');
+                            }
+                        }
+                    }
+                });
+            });
+            
+            canvasObserver.observe(canvas, {
+                attributes: true,
+                attributeFilter: ['height', 'style'],
+                attributeOldValue: true
+            });
+            
+            // Store observer for potential cleanup
+            window.canvasObserver = canvasObserver;
+        }
+        
+        // Ensure permanent failures updates even if initial call fails
+        setTimeout(() => {
+            const tbody = document.getElementById('permanentFailuresTable');
+            if (tbody && tbody.innerHTML.includes('Loading...')) {
+                updatePermanentFailures();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
