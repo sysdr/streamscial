@@ -1,0 +1,24 @@
+kafka:
+  bootstrap_servers: "localhost:9092"
+  input_topic: "user-interactions"
+  output_topic: "feed-ranking-signals"
+  consumer_group: "interaction-stream-processor"
+  
+processing:
+  batch_size: 100
+  commit_interval_ms: 5000
+  
+weights:
+  LIKE: 1.0
+  SHARE: 3.0
+  COMMENT: 2.0
+  VIEW: 0.1
+  
+reputation:
+  new_user: 0.5
+  regular_user: 1.0
+  established_user: 2.0
+  
+monitoring:
+  port: 8080
+  metrics_interval: 5
