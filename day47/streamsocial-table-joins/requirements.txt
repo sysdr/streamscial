@@ -1,0 +1,8 @@
+kafka-python>=2.3.0
+confluent-kafka==2.5.3
+flask==3.0.3
+flask-cors==4.0.1
+pytest==8.2.2
+pytest-timeout==2.4.0
+requests==2.32.3
+psutil==6.0.0
