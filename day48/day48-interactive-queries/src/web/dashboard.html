@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>StreamSocial Trending Topics - Interactive Queries</title>
+    <meta charset="utf-8">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #2c3e50;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            color: #00d4aa;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #a0a0a0;
+            font-size: 1.1em;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: #ffffff;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .card h2 {
+            color: #00d4aa;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+        
+        .live-indicator {
+            width: 12px;
+            height: 12px;
+            background: #2ecc71;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .trending-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            border-left: 4px solid #00d4aa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .trending-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 212, 170, 0.2);
+            border-left-color: #ff6b35;
+        }
+        
+        .rank {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #ff6b35;
+            min-width: 40px;
+        }
+        
+        .hashtag {
+            flex: 1;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .count {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #00d4aa;
+            margin: 0 15px;
+        }
+        
+        .velocity {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .velocity.up {
+            background: #00d4aa;
+            color: white;
+        }
+        
+        .velocity.down {
+            background: #ff6b35;
+            color: white;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #00d4aa 0%, #00a884 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 212, 170, 0.3);
+            transition: transform 0.2s;
+        }
+        
+        .stat-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 212, 170, 0.4);
+        }
+        
+        .stat-box:nth-child(2) {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+        
+        .stat-box:nth-child(2):hover {
+            box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+        }
+        
+        .stat-box:nth-child(3) {
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            box-shadow: 0 4px 15px rgba(45, 55, 72, 0.3);
+        }
+        
+        .stat-box:nth-child(3):hover {
+            box-shadow: 0 6px 20px rgba(45, 55, 72, 0.4);
+        }
+        
+        .stat-box:nth-child(4) {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            box-shadow: 0 4px 15px rgba(74, 85, 104, 0.3);
+        }
+        
+        .stat-box:nth-child(4):hover {
+            box-shadow: 0 6px 20px rgba(74, 85, 104, 0.4);
+        }
+        
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        #loadingIndicator {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔥 StreamSocial Trending Topics</h1>
+            <p class="subtitle">Interactive Queries with Kafka Streams - Live Dashboard</p>
+        </header>
+        
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2>
+                    <span class="live-indicator"></span>
+                    Top Trending Now
+                </h2>
+                <div id="trendingList">
+                    <div id="loadingIndicator">Connecting to stream...</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>📊 Trending Chart</h2>
+                <div class="chart-container">
+                    <canvas id="trendingChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2>📈 System Metrics</h2>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-value" id="totalTopics">0</div>
+                    <div class="stat-label">Trending Topics</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="totalMentions">0</div>
+                    <div class="stat-label">Total Mentions</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="updateTime">--:--</div>
+                    <div class="stat-label">Last Update</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="windowSize">5</div>
+                    <div class="stat-label">Window (minutes)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const socket = io('http://localhost:8080');
+        let chart = null;
+        
+        // Initialize chart
+        const ctx = document.getElementById('trendingChart').getContext('2d');
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Mentions',
+                    data: [],
+                    backgroundColor: 'rgba(0, 212, 170, 0.8)',
+                    borderColor: 'rgba(0, 212, 170, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // Handle trending updates
+        socket.on('trending_update', (data) => {
+            updateDashboard(data);
+        });
+        
+        // Initial load
+        fetch('http://localhost:8080/api/trending')
+            .then(res => res.json())
+            .then(data => updateDashboard(data))
+            .catch(err => console.error('Error:', err));
+        
+        function updateDashboard(data) {
+            const trending = data.trending || [];
+            
+            // Update list
+            const listHtml = trending.map((item, index) => `
+                <div class="trending-item">
+                    <span class="rank">#${index + 1}</span>
+                    <span class="hashtag">#${item.hashtag}</span>
+                    <span class="count">${item.count.toLocaleString()}</span>
+                    <span class="velocity ${item.velocity >= 0 ? 'up' : 'down'}">
+                        ${item.velocity >= 0 ? '↑' : '↓'} ${Math.abs(item.velocity)}
+                    </span>
+                </div>
+            `).join('');
+            
+            document.getElementById('trendingList').innerHTML = listHtml || '<div id="loadingIndicator">No trending topics yet...</div>';
+            
+            // Update chart
+            chart.data.labels = trending.map(t => '#' + t.hashtag);
+            chart.data.datasets[0].data = trending.map(t => t.count);
+            chart.update();
+            
+            // Update stats
+            document.getElementById('totalTopics').textContent = trending.length;
+            document.getElementById('totalMentions').textContent = trending.reduce((sum, t) => sum + t.count, 0).toLocaleString();
+            document.getElementById('updateTime').textContent = new Date().toLocaleTimeString();
+        }
+    </script>
+</body>
+</html>
