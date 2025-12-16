@@ -1,0 +1,14 @@
+confluent-kafka==2.5.0
+prometheus-client==0.20.0
+flask==3.0.3
+flask-cors==4.0.1
+flask-socketio==5.3.6
+python-socketio==5.11.2
+requests==2.32.3
+pytest==8.2.2
+pytest-asyncio==0.23.7
+pytest-timeout==2.2.0
+numpy==1.26.4
+pandas==2.2.2
+simple-websocket==1.0.0
+python-engineio==4.9.1

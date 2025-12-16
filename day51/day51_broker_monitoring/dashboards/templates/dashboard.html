@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial Broker Monitoring</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f1f5f9;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: #ffffff;
+            padding: 25px 30px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            margin-bottom: 25px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .header h1 {
+            color: #2d3748;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        .status-bar {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .status-item {
+            flex: 1;
+            background: #ffffff;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .status-item.healthy {
+            border-left-color: #48bb78;
+        }
+        
+        .status-item.warning {
+            border-left-color: #ed8936;
+        }
+        
+        .status-item.critical {
+            border-left-color: #f56565;
+        }
+        
+        .status-label {
+            font-size: 11px;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        
+        .status-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2d3748;
+        }
+        
+        .status-unit {
+            font-size: 12px;
+            color: #a0aec0;
+            margin-left: 4px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+        }
+        
+        .card h2 {
+            color: #2d3748;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card h2::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #3b82f6;
+            margin-right: 12px;
+            border-radius: 2px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 280px;
+        }
+        
+        .broker-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .broker-card {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            padding: 20px;
+            border-radius: 12px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .broker-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+        }
+        
+        .broker-id {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+        
+        .broker-metric {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        
+        .broker-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .broker-stats {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            font-size: 12px;
+        }
+        
+        .broker-stat {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        
+        .alerts-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        
+        .alert.critical {
+            background: #fff5f5;
+            border-left: 4px solid #f56565;
+        }
+        
+        .alert.warning {
+            background: #fffaf0;
+            border-left: 4px solid #ed8936;
+        }
+        
+        .alert.info {
+            background: #ebf8ff;
+            border-left: 4px solid #4299e1;
+        }
+        
+        .alert-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        
+        .alert.critical .alert-icon {
+            background: #f56565;
+            color: white;
+        }
+        
+        .alert.warning .alert-icon {
+            background: #ed8936;
+            color: white;
+        }
+        
+        .alert-content {
+            flex: 1;
+        }
+        
+        .alert-message {
+            color: #2d3748;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .alert-time {
+            color: #718096;
+            font-size: 12px;
+        }
+        
+        .no-alerts {
+            text-align: center;
+            padding: 40px;
+            color: #a0aec0;
+        }
+        
+        .connection-status {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #48bb78;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span class="connection-status"></span>StreamSocial Broker Monitoring</h1>
+            <p>Real-time Kafka cluster metrics tracking 50M req/s production infrastructure</p>
+            
+            <div class="status-bar">
+                <div class="status-item" id="status-messages">
+                    <div class="status-label">Messages/sec</div>
+                    <div class="status-value">0<span class="status-unit">msg/s</span></div>
+                </div>
+                <div class="status-item" id="status-throughput">
+                    <div class="status-label">Throughput In</div>
+                    <div class="status-value">0<span class="status-unit">MB/s</span></div>
+                </div>
+                <div class="status-item" id="status-idle">
+                    <div class="status-label">Avg Idle</div>
+                    <div class="status-value">0<span class="status-unit">%</span></div>
+                </div>
+                <div class="status-item" id="status-health">
+                    <div class="status-label">Cluster Health</div>
+                    <div class="status-value">UNKNOWN</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <div class="card">
+                <h2>Cluster Throughput</h2>
+                <div class="chart-container">
+                    <canvas id="throughputChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Request Handler Idle %</h2>
+                <div class="chart-container">
+                    <canvas id="idleChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <div class="card">
+                <h2>Broker Performance</h2>
+                <div class="broker-grid" id="brokersGrid">
+                    <!-- Broker cards will be inserted here -->
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2>Active Alerts</h2>
+                <div class="alerts-container" id="alertsContainer">
+                    <div class="no-alerts">No active alerts - All systems healthy</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const socket = io();
+        
+        // Chart configurations
+        const throughputCtx = document.getElementById('throughputChart').getContext('2d');
+        const idleCtx = document.getElementById('idleChart').getContext('2d');
+        
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(226, 232, 240, 0.8)'
+                    },
+                    ticks: {
+                        color: '#64748b'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#64748b'
+                    }
+                }
+            }
+        };
+        
+        const throughputChart = new Chart(throughputCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Messages/sec',
+                    data: [],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: chartOptions
+        });
+        
+        const idleChart = new Chart(idleCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Idle %',
+                    data: [],
+                    borderColor: '#48bb78',
+                    backgroundColor: 'rgba(72, 187, 120, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: chartOptions
+        });
+        
+        socket.on('connect', function() {
+            console.log('WebSocket connected');
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('WebSocket disconnected');
+        });
+        
+        socket.on('metrics_update', function(data) {
+            console.log('Received metrics update:', data.cluster.messages_per_sec);
+            updateClusterMetrics(data.cluster);
+            updateBrokers(data.brokers);
+            updateAlerts(data.alerts);
+            updateCharts(data.cluster);
+        });
+        
+        function updateClusterMetrics(cluster) {
+            document.querySelector('#status-messages .status-value').innerHTML = 
+                `${formatNumber(cluster.messages_per_sec)}<span class="status-unit">msg/s</span>`;
+            
+            document.querySelector('#status-throughput .status-value').innerHTML = 
+                `${formatBytes(cluster.bytes_in_per_sec)}<span class="status-unit">MB/s</span>`;
+            
+            document.querySelector('#status-idle .status-value').innerHTML = 
+                `${cluster.avg_request_idle.toFixed(1)}<span class="status-unit">%</span>`;
+            
+            const healthEl = document.getElementById('status-health');
+            healthEl.querySelector('.status-value').textContent = cluster.health_status;
+            healthEl.className = 'status-item ' + cluster.health_status.toLowerCase();
+        }
+        
+        function updateBrokers(brokers) {
+            const grid = document.getElementById('brokersGrid');
+            grid.innerHTML = '';
+            
+            brokers.forEach(broker => {
+                const card = document.createElement('div');
+                card.className = 'broker-card';
+                card.innerHTML = `
+                    <div class="broker-id">Broker ${broker.id}</div>
+                    <div class="broker-metric">${formatNumber(broker.messages_per_sec)}</div>
+                    <div class="broker-label">messages/sec</div>
+                    <div class="broker-stats">
+                        <div class="broker-stat">
+                            <span>Partitions:</span>
+                            <span>${broker.partitions}</span>
+                        </div>
+                        <div class="broker-stat">
+                            <span>Leaders:</span>
+                            <span>${broker.leaders}</span>
+                        </div>
+                        <div class="broker-stat">
+                            <span>Idle:</span>
+                            <span>${broker.request_idle.toFixed(1)}%</span>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+        
+        function updateAlerts(alerts) {
+            const container = document.getElementById('alertsContainer');
+            
+            if (alerts.length === 0) {
+                container.innerHTML = '<div class="no-alerts">No active alerts - All systems healthy</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            alerts.forEach(alert => {
+                const alertEl = document.createElement('div');
+                alertEl.className = `alert ${alert.level.toLowerCase()}`;
+                alertEl.innerHTML = `
+                    <div class="alert-icon">!</div>
+                    <div class="alert-content">
+                        <div class="alert-message">${alert.message}</div>
+                        <div class="alert-time">${new Date(alert.timestamp).toLocaleTimeString()}</div>
+                    </div>
+                `;
+                container.appendChild(alertEl);
+            });
+        }
+        
+        function updateCharts(cluster) {
+            const time = new Date().toLocaleTimeString();
+            
+            // Throughput chart
+            throughputChart.data.labels.push(time);
+            throughputChart.data.datasets[0].data.push(cluster.messages_per_sec);
+            
+            if (throughputChart.data.labels.length > 20) {
+                throughputChart.data.labels.shift();
+                throughputChart.data.datasets[0].data.shift();
+            }
+            throughputChart.update('none');
+            
+            // Idle chart
+            idleChart.data.labels.push(time);
+            idleChart.data.datasets[0].data.push(cluster.avg_request_idle);
+            
+            if (idleChart.data.labels.length > 20) {
+                idleChart.data.labels.shift();
+                idleChart.data.datasets[0].data.shift();
+            }
+            idleChart.update('none');
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(2) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(2) + 'K';
+            } else if (num >= 1) {
+                return num.toFixed(2);
+            } else if (num > 0) {
+                return num.toFixed(3);
+            }
+            return '0';
+        }
+        
+        function formatBytes(bytes) {
+            return (bytes / 1024 / 1024).toFixed(2);
+        }
+    </script>
+</body>
+</html>
