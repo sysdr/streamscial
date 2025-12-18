@@ -1,0 +1,28 @@
+{
+  "consumer_groups": {
+    "notifications-delivery": {
+      "max_lag_messages": 1000,
+      "min_throughput_rps": 5000,
+      "max_e2e_latency_ms": 100,
+      "priority": "critical"
+    },
+    "feed-generator": {
+      "max_lag_messages": 50000,
+      "min_throughput_rps": 15000,
+      "max_e2e_latency_ms": 500,
+      "priority": "high"
+    },
+    "analytics-pipeline": {
+      "max_lag_messages": 500000,
+      "min_throughput_rps": 8000,
+      "max_e2e_latency_ms": 5000,
+      "priority": "medium"
+    },
+    "trending-hashtags": {
+      "max_lag_messages": 10000,
+      "min_throughput_rps": 6000,
+      "max_e2e_latency_ms": 200,
+      "priority": "high"
+    }
+  }
+}

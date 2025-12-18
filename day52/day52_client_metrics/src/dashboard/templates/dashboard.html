@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial - SLA Compliance Dashboard</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            color: #2d3748;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .header {
+            text-align: center;
+            color: #1e293b;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #1e293b;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            color: #475569;
+            font-weight: 500;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 25px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .panel-header {
+            font-size: 1.5em;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1e293b;
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 10px;
+        }
+        
+        .health-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .health-card {
+            background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%);
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 5px solid #2563eb;
+        }
+        
+        .health-card.healthy { border-left-color: #48bb78; }
+        .health-card.warning { border-left-color: #ed8936; }
+        .health-card.critical { border-left-color: #f56565; }
+        
+        .health-card h3 {
+            font-size: 1em;
+            color: #4a5568;
+            margin-bottom: 10px;
+        }
+        
+        .health-score {
+            font-size: 2.5em;
+            font-weight: 800;
+            color: #1a202c;
+            margin: 10px 0;
+        }
+        
+        .health-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-healthy {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-warning {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+        
+        .status-critical {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            margin: 8px 0;
+            background: #f7fafc;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        
+        .metric-row:hover {
+            background: #edf2f7;
+        }
+        
+        .metric-label {
+            font-weight: 600;
+            color: #4a5568;
+        }
+        
+        .metric-value {
+            font-weight: 700;
+            color: #2d3748;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 15px;
+        }
+        
+        .lag-partition {
+            background: linear-gradient(to right, #f7fafc, #edf2f7);
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border-left: 4px solid #2563eb;
+        }
+        
+        .lag-partition.high-lag {
+            border-left-color: #f56565;
+            background: linear-gradient(to right, #fff5f5, #fed7d7);
+        }
+        
+        .alert-box {
+            background: #fff5f5;
+            border-left: 4px solid #f56565;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-weight: 500;
+            color: #742a2a;
+        }
+        
+        .alert-box::before {
+            content: "⚠ ";
+            font-size: 1.2em;
+        }
+        
+        .throughput-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .instance-cell {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 0.9em;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .instance-good { background: linear-gradient(135deg, #48bb78, #38a169); }
+        .instance-warning { background: linear-gradient(135deg, #ed8936, #dd6b20); }
+        .instance-critical { background: linear-gradient(135deg, #f56565, #e53e3e); }
+        
+        .timestamp {
+            text-align: center;
+            color: #64748b;
+            margin-top: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 StreamSocial SLA Compliance Dashboard</h1>
+        <p>Real-time Client Metrics & Observability</p>
+    </div>
+    
+    <div class="dashboard-grid">
+        <!-- Health Scores Panel -->
+        <div class="panel">
+            <div class="panel-header">🎯 Consumer Group Health</div>
+            <div class="health-grid" id="healthGrid"></div>
+        </div>
+        
+        <!-- Lag Monitoring Panel -->
+        <div class="panel">
+            <div class="panel-header">📈 Lag Trends</div>
+            <div class="chart-container">
+                <canvas id="lagChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Throughput Panel -->
+        <div class="panel">
+            <div class="panel-header">⚡ Throughput Metrics</div>
+            <div id="throughputMetrics"></div>
+        </div>
+        
+        <!-- Partition Lag Detail -->
+        <div class="panel">
+            <div class="panel-header">🔍 Per-Partition Lag</div>
+            <div id="partitionLag"></div>
+        </div>
+        
+        <!-- Producer Metrics -->
+        <div class="panel">
+            <div class="panel-header">📤 Producer Performance</div>
+            <div id="producerMetrics"></div>
+        </div>
+        
+        <!-- Alerts Panel -->
+        <div class="panel">
+            <div class="panel-header">🚨 Active Alerts</div>
+            <div id="alertsPanel"></div>
+        </div>
+    </div>
+    
+    <div class="timestamp" id="timestamp"></div>
+    
+    <script>
+        const socket = io();
+        
+        // Initialize lag chart
+        const lagCtx = document.getElementById('lagChart').getContext('2d');
+        const lagChart = new Chart(lagCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { font: { size: 12, weight: 'bold' } }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Lag (messages)', font: { weight: 'bold' } }
+                    }
+                }
+            }
+        });
+        
+        const lagHistory = {};
+        const maxHistoryPoints = 20;
+        
+        socket.on('metrics_update', function(data) {
+            updateHealthScores(data.sla);
+            updateLagChart(data.lag);
+            updateThroughput(data.consumers);
+            updatePartitionLag(data.lag);
+            updateProducerMetrics(data.producers);
+            updateAlerts(data.sla);
+            updateTimestamp();
+        });
+        
+        function updateHealthScores(slaData) {
+            const grid = document.getElementById('healthGrid');
+            grid.innerHTML = '';
+            
+            const groups = {};
+            slaData.forEach(item => {
+                if (!groups[item.group_id]) {
+                    groups[item.group_id] = item;
+                }
+            });
+            
+            Object.values(groups).forEach(item => {
+                const card = document.createElement('div');
+                card.className = `health-card ${item.status}`;
+                
+                const statusClass = `status-${item.status}`;
+                
+                card.innerHTML = `
+                    <h3>${item.group_id}</h3>
+                    <div class="health-score">${item.health_score}%</div>
+                    <span class="health-status ${statusClass}">${item.status}</span>
+                    ${item.time_to_breach_min ? `<p style="margin-top:10px;color:#e53e3e;font-weight:600;">
+                        Breach in ${item.time_to_breach_min.toFixed(1)} min
+                    </p>` : ''}
+                `;
+                grid.appendChild(card);
+            });
+        }
+        
+        function updateLagChart(lagData) {
+            const timestamp = new Date().toLocaleTimeString();
+            
+            lagData.forEach(item => {
+                const key = `${item.group_id}-${item.topic}`;
+                
+                if (!lagHistory[key]) {
+                    lagHistory[key] = [];
+                    const color = `hsl(${Math.random() * 360}, 70%, 50%)`;
+                    lagChart.data.datasets.push({
+                        label: key,
+                        data: [],
+                        borderColor: color,
+                        backgroundColor: color + '33',
+                        tension: 0.4,
+                        borderWidth: 2
+                    });
+                }
+                
+                lagHistory[key].push(item.total_lag);
+                if (lagHistory[key].length > maxHistoryPoints) {
+                    lagHistory[key].shift();
+                }
+            });
+            
+            if (lagChart.data.labels.length === 0 || lagChart.data.labels[lagChart.data.labels.length - 1] !== timestamp) {
+                lagChart.data.labels.push(timestamp);
+                if (lagChart.data.labels.length > maxHistoryPoints) {
+                    lagChart.data.labels.shift();
+                }
+            }
+            
+            lagChart.data.datasets.forEach((dataset, idx) => {
+                const key = dataset.label;
+                dataset.data = lagHistory[key] || [];
+            });
+            
+            lagChart.update('none');
+        }
+        
+        function updateThroughput(consumerData) {
+            const container = document.getElementById('throughputMetrics');
+            container.innerHTML = '';
+            
+            consumerData.forEach(consumer => {
+                const row = document.createElement('div');
+                row.className = 'metric-row';
+                row.innerHTML = `
+                    <span class="metric-label">${consumer.client_id}</span>
+                    <span class="metric-value">${consumer.throughput_rps.toFixed(0)} msg/sec</span>
+                `;
+                container.appendChild(row);
+            });
+        }
+        
+        function updatePartitionLag(lagData) {
+            const container = document.getElementById('partitionLag');
+            container.innerHTML = '';
+            
+            lagData.forEach(item => {
+                Object.entries(item.partition_lags).forEach(([partition, data]) => {
+                    const isHighLag = data.lag > 50000;
+                    const div = document.createElement('div');
+                    div.className = `lag-partition ${isHighLag ? 'high-lag' : ''}`;
+                    div.innerHTML = `
+                        <strong>${item.topic} [P${partition}]</strong>: 
+                        ${data.lag.toLocaleString()} messages
+                        <span style="float:right;color:#718096;">
+                            ${data.committed_offset.toLocaleString()} / ${data.latest_offset.toLocaleString()}
+                        </span>
+                    `;
+                    container.appendChild(div);
+                });
+            });
+        }
+        
+        function updateProducerMetrics(producerData) {
+            const container = document.getElementById('producerMetrics');
+            container.innerHTML = '';
+            
+            producerData.forEach(producer => {
+                const row = document.createElement('div');
+                row.className = 'metric-row';
+                row.innerHTML = `
+                    <span class="metric-label">${producer.client_id}</span>
+                    <span class="metric-value">
+                        ${producer.throughput_rps.toFixed(0)} msg/sec | 
+                        ${producer.avg_latency_ms.toFixed(1)}ms avg
+                    </span>
+                `;
+                container.appendChild(row);
+            });
+        }
+        
+        function updateAlerts(slaData) {
+            const container = document.getElementById('alertsPanel');
+            container.innerHTML = '';
+            
+            const alerts = [];
+            slaData.forEach(item => {
+                if (item.violations && item.violations.length > 0) {
+                    item.violations.forEach(violation => {
+                        alerts.push(`${item.group_id}: ${violation}`);
+                    });
+                }
+                
+                if (item.time_to_breach_min && item.time_to_breach_min < 10) {
+                    alerts.push(`${item.group_id} will breach SLA in ${item.time_to_breach_min.toFixed(1)} minutes`);
+                }
+            });
+            
+            if (alerts.length === 0) {
+                container.innerHTML = '<p style="color:#38a169;font-weight:600;">✓ All systems operational</p>';
+            } else {
+                alerts.forEach(alert => {
+                    const div = document.createElement('div');
+                    div.className = 'alert-box';
+                    div.textContent = alert;
+                    container.appendChild(div);
+                });
+            }
+        }
+        
+        function updateTimestamp() {
+            document.getElementById('timestamp').textContent = 
+                `Last updated: ${new Date().toLocaleString()}`;
+        }
+        
+        // Fetch initial data
+        fetch('/api/metrics')
+            .then(r => r.json())
+            .then(data => {
+                updateHealthScores(data.sla);
+                updateThroughput(data.consumers);
+                updatePartitionLag(data.lag);
+                updateProducerMetrics(data.producers);
+                updateAlerts(data.sla);
+            });
+    </script>
+</body>
+</html>
