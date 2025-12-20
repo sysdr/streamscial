@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSocial SASL Authentication Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 24px;
+            color: #1a202c;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            color: white;
+        }
+        
+        .header h1 {
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 15px;
+            font-weight: 400;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 10px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border-left: 4px solid #e2e8f0;
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .metric-card:nth-child(1) { border-left-color: #3b82f6; }
+        .metric-card:nth-child(2) { border-left-color: #10b981; }
+        .metric-card:nth-child(3) { border-left-color: #0ea5e9; }
+        .metric-card:nth-child(4) { border-left-color: #06b6d4; }
+        .metric-card:nth-child(5) { border-left-color: #f59e0b; }
+        .metric-card:nth-child(6) { border-left-color: #ef4444; }
+        
+        .metric-label {
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 12px;
+        }
+        
+        .metric-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #1e293b;
+            line-height: 1.2;
+        }
+        
+        .metric-value.success {
+            color: #059669;
+        }
+        
+        .metric-value.danger {
+            color: #dc2626;
+        }
+        
+        .metric-value.info {
+            color: #2563eb;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e2e8f0;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .chart-wrapper {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .tables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+        
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            max-height: 520px;
+            overflow-y: auto;
+        }
+        
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        
+        .table-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+        
+        th {
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 14px 12px;
+            border-bottom: 2px solid #e2e8f0;
+            background: #f8fafc;
+        }
+        
+        td {
+            padding: 14px 12px;
+            font-size: 14px;
+            color: #334155;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        tr:hover {
+            background: #f8fafc;
+        }
+        
+        tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .timestamp {
+            font-size: 12px;
+            color: #64748b;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span>🔐</span>
+                <span>StreamSocial SASL Authentication Monitor</span>
+            </h1>
+            <p>Real-time authentication monitoring and security analytics dashboard</p>
+        </div>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Total Attempts</div>
+                <div class="metric-value" id="totalAttempts">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Success Rate</div>
+                <div class="metric-value success" id="successRate">0%</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">SCRAM Auths</div>
+                <div class="metric-value info" id="scramAuths">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">PLAIN Auths</div>
+                <div class="metric-value info" id="plainAuths">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Avg Latency</div>
+                <div class="metric-value" id="avgLatency">0ms</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Failed Auths</div>
+                <div class="metric-value danger" id="failedAuths">0</div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">Authentication Mechanism Distribution</div>
+            <div class="chart-wrapper">
+                <canvas id="authChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="tables-grid">
+            <div class="table-container">
+                <div class="chart-title">Recent Authentication Events</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Mechanism</th>
+                            <th>Status</th>
+                            <th>Latency</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventsTable"></tbody>
+                </table>
+            </div>
+            
+            <div class="table-container">
+                <div class="chart-title">High Failure Rate Users</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Failure Rate</th>
+                            <th>Attempts</th>
+                            <th>Failures</th>
+                        </tr>
+                    </thead>
+                    <tbody id="failureRatesTable"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="table-container" style="margin-top: 0;">
+            <div class="chart-title">Registered Users</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Mechanism</th>
+                        <th>Created</th>
+                        <th>Last Rotated</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTable"></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        let authChart;
+        
+        function initChart() {
+            const ctx = document.getElementById('authChart').getContext('2d');
+            authChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['SCRAM-SHA-512', 'PLAIN', 'Failed'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#2563eb', '#0ea5e9', '#dc2626'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    aspectRatio: 1.3,
+                    cutout: '60%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                },
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 13,
+                                weight: '600'
+                            },
+                            bodyFont: {
+                                size: 12
+                            },
+                            cornerRadius: 6
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateMetrics(stats) {
+            document.getElementById('totalAttempts').textContent = stats.total_attempts.toLocaleString();
+            document.getElementById('successRate').textContent = stats.success_rate + '%';
+            document.getElementById('scramAuths').textContent = stats.scram_auths.toLocaleString();
+            document.getElementById('plainAuths').textContent = stats.plain_auths.toLocaleString();
+            document.getElementById('avgLatency').textContent = stats.avg_latency_ms + 'ms';
+            document.getElementById('failedAuths').textContent = stats.failed_auths.toLocaleString();
+            
+            authChart.data.datasets[0].data = [
+                stats.scram_auths,
+                stats.plain_auths,
+                stats.failed_auths
+            ];
+            authChart.update();
+        }
+        
+        function updateEventsTable(events) {
+            const tbody = document.getElementById('eventsTable');
+            if (events.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 32px; font-style: italic;">No recent authentication events</td></tr>';
+                return;
+            }
+            tbody.innerHTML = events.map(event => `
+                <tr>
+                    <td><strong>${event.username}</strong></td>
+                    <td><span class="badge badge-info">${event.mechanism}</span></td>
+                    <td><span class="badge ${event.success ? 'badge-success' : 'badge-danger'}">
+                        ${event.success ? 'Success' : 'Failed'}
+                    </span></td>
+                    <td>${event.latency_ms.toFixed(2)}ms</td>
+                </tr>
+            `).join('');
+        }
+        
+        function updateFailureRatesTable(rates) {
+            const tbody = document.getElementById('failureRatesTable');
+            if (rates.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 32px; font-style: italic;">✅ No high failure rates detected</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = rates.map(rate => `
+                <tr>
+                    <td>${rate.username}</td>
+                    <td><span class="badge badge-danger">${rate.failure_rate}%</span></td>
+                    <td>${rate.total_attempts}</td>
+                    <td>${rate.failures}</td>
+                </tr>
+            `).join('');
+        }
+        
+        function updateUsersTable(users) {
+            const tbody = document.getElementById('usersTable');
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 32px; font-style: italic;">No registered users</td></tr>';
+                return;
+            }
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td><strong>${user.username}</strong></td>
+                    <td><span class="badge badge-info">${user.mechanism}</span></td>
+                    <td class="timestamp">${new Date(user.created_at).toLocaleString()}</td>
+                    <td class="timestamp">${new Date(user.last_rotated).toLocaleString()}</td>
+                    <td><span class="badge ${user.enabled ? 'badge-success' : 'badge-danger'}">
+                        ${user.enabled ? 'Enabled' : 'Disabled'}
+                    </span></td>
+                </tr>
+            `).join('');
+        }
+        
+        async function fetchData() {
+            try {
+                const [statsRes, usersRes, failureRatesRes] = await Promise.all([
+                    fetch('/api/stats'),
+                    fetch('/api/users'),
+                    fetch('/api/failure-rates')
+                ]);
+                
+                const stats = await statsRes.json();
+                const users = await usersRes.json();
+                const failureRates = await failureRatesRes.json();
+                
+                updateMetrics(stats);
+                updateEventsTable(stats.recent_events);
+                updateUsersTable(users);
+                updateFailureRatesTable(failureRates);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+        
+        initChart();
+        fetchData();
+        setInterval(fetchData, 2000);
+    </script>
+</body>
+</html>
