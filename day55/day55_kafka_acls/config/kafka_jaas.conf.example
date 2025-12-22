@@ -1,0 +1,10 @@
+KafkaServer {
+    org.apache.kafka.common.security.plain.PlainLoginModule required
+    username="admin"
+    password="CHANGE_ME_ADMIN_PASSWORD"
+    user_admin="CHANGE_ME_ADMIN_PASSWORD"
+    user_post_service="CHANGE_ME_POST_PASSWORD"
+    user_analytics_service="CHANGE_ME_ANALYTICS_PASSWORD"
+    user_moderation_service="CHANGE_ME_MODERATION_PASSWORD";
+};
+
