@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>StreamSocial TLS Security Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #4a90e2 100%);
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .metric-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            transition: transform 0.3s;
+        }
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+        .metric-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #2a5298;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        .status-secure {
+            background-color: #4CAF50;
+        }
+        .status-warning {
+            background-color: #FF9800;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .info-badge {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin: 5px;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 StreamSocial TLS Security Monitor</h1>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">
+                    <span class="status-indicator status-secure"></span>
+                    TLS Connections
+                </div>
+                <div class="metric-value" id="connections">0</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Certificate Expiry</div>
+                <div class="metric-value" id="expiry">0 days</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Encrypted Throughput</div>
+                <div class="metric-value" id="throughput">0 KB</div>
+            </div>
+            
+            <div class="metric-card">
+                <div class="metric-label">Handshake Failures</div>
+                <div class="metric-value" id="failures">0</div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h3>Connection Timeline</h3>
+            <canvas id="connectionChart"></canvas>
+        </div>
+        
+        <div class="chart-container">
+            <h3>Security Status</h3>
+            <div>
+                <span class="info-badge">✓ TLS 1.3 Enabled</span>
+                <span class="info-badge">✓ Mutual Authentication</span>
+                <span class="info-badge">✓ Certificate Validation</span>
+                <span class="info-badge">✓ AES-256-GCM Encryption</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const ctx = document.getElementById('connectionChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'TLS Connections',
+                    data: [],
+                    borderColor: '#2a5298',
+                    backgroundColor: 'rgba(42, 82, 152, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+        
+        function updateMetrics() {
+            fetch('/api/metrics')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('connections').textContent = data.tls_connections;
+                    document.getElementById('expiry').textContent = data.certificate_expiry_days + ' days';
+                    document.getElementById('throughput').textContent = 
+                        (data.encrypted_throughput / 1024).toFixed(2) + ' KB';
+                    document.getElementById('failures').textContent = data.handshake_failures;
+                    
+                    // Update chart
+                    if (data.connection_timeline.length > 0) {
+                        chart.data.labels = data.connection_timeline.map(d => 
+                            new Date(d.timestamp).toLocaleTimeString()
+                        );
+                        chart.data.datasets[0].data = data.connection_timeline.map(d => d.connections);
+                        chart.update();
+                    }
+                });
+        }
+        
+        updateMetrics();
+        setInterval(updateMetrics, 2000);
+    </script>
+</body>
+</html>
