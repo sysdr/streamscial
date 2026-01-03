@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "Post",
+  "namespace": "com.streamsocial.post",
+  "doc": "StreamSocial post event - Version 1",
+  "fields": [
+    {
+      "name": "post_id",
+      "type": "string",
+      "doc": "Unique post identifier"
+    },
+    {
+      "name": "user_id",
+      "type": "string",
+      "doc": "Author user ID"
+    },
+    {
+      "name": "content",
+      "type": "string",
+      "doc": "Post text content"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "Unix timestamp milliseconds"
+    }
+  ]
+}

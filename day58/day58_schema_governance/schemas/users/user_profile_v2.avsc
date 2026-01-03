@@ -1,0 +1,40 @@
+{
+  "type": "record",
+  "name": "UserProfile",
+  "namespace": "com.streamsocial.user",
+  "doc": "User profile event - Version 2 (Verified badge added)",
+  "fields": [
+    {
+      "name": "user_id",
+      "type": "string"
+    },
+    {
+      "name": "username",
+      "type": "string"
+    },
+    {
+      "name": "display_name",
+      "type": "string"
+    },
+    {
+      "name": "bio",
+      "type": "string"
+    },
+    {
+      "name": "follower_count",
+      "type": "int"
+    },
+    {
+      "name": "verified",
+      "type": "boolean",
+      "default": false,
+      "doc": "Verified badge status - backward compatible"
+    },
+    {
+      "name": "verification_type",
+      "type": ["null", {"type": "enum", "name": "VerificationType", "symbols": ["INDIVIDUAL", "BUSINESS", "GOVERNMENT", "CELEBRITY"]}],
+      "default": null,
+      "doc": "Type of verification"
+    }
+  ]
+}

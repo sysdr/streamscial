@@ -1,0 +1,42 @@
+{
+  "type": "record",
+  "name": "Post",
+  "namespace": "com.streamsocial.post",
+  "doc": "StreamSocial post event - Version 2 (Polls added)",
+  "fields": [
+    {
+      "name": "post_id",
+      "type": "string",
+      "doc": "Unique post identifier"
+    },
+    {
+      "name": "user_id",
+      "type": "string",
+      "doc": "Author user ID"
+    },
+    {
+      "name": "content",
+      "type": "string",
+      "doc": "Post text content"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "Unix timestamp milliseconds"
+    },
+    {
+      "name": "poll_data",
+      "type": ["null", {
+        "type": "record",
+        "name": "Poll",
+        "fields": [
+          {"name": "question", "type": "string"},
+          {"name": "options", "type": {"type": "array", "items": "string"}},
+          {"name": "duration_hours", "type": "int"}
+        ]
+      }],
+      "default": null,
+      "doc": "Optional poll data - backward compatible"
+    }
+  ]
+}

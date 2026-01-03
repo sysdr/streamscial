@@ -1,0 +1,56 @@
+{
+  "type": "record",
+  "name": "Post",
+  "namespace": "com.streamsocial.post",
+  "doc": "StreamSocial post event - Version 3 (Rich media added)",
+  "fields": [
+    {
+      "name": "post_id",
+      "type": "string",
+      "doc": "Unique post identifier"
+    },
+    {
+      "name": "user_id",
+      "type": "string",
+      "doc": "Author user ID"
+    },
+    {
+      "name": "content",
+      "type": "string",
+      "doc": "Post text content"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "Unix timestamp milliseconds"
+    },
+    {
+      "name": "poll_data",
+      "type": ["null", {
+        "type": "record",
+        "name": "Poll",
+        "fields": [
+          {"name": "question", "type": "string"},
+          {"name": "options", "type": {"type": "array", "items": "string"}},
+          {"name": "duration_hours", "type": "int"}
+        ]
+      }],
+      "default": null,
+      "doc": "Optional poll data"
+    },
+    {
+      "name": "media",
+      "type": ["null", {
+        "type": "record",
+        "name": "Media",
+        "fields": [
+          {"name": "media_type", "type": {"type": "enum", "name": "MediaType", "symbols": ["IMAGE", "VIDEO", "GIF", "GALLERY"]}},
+          {"name": "urls", "type": {"type": "array", "items": "string"}},
+          {"name": "thumbnails", "type": {"type": "array", "items": "string"}}
+        ]
+      }],
+      "default": null,
+      "doc": "Optional rich media - backward compatible"
+    }
+  ]
+}
