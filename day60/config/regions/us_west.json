@@ -1,0 +1,9 @@
+{
+  "region_name": "us-west-1",
+  "role": "hot_standby",
+  "kafka_brokers": ["localhost:9095", "localhost:9096"],
+  "api_gateway": "http://localhost:8002",
+  "postgres_host": "localhost:5433",
+  "redis_host": "localhost:6380",
+  "replication_lag_target_ms": 1500
+}

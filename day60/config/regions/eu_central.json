@@ -1,0 +1,9 @@
+{
+  "region_name": "eu-central-1",
+  "role": "read_replica",
+  "kafka_brokers": ["localhost:9097"],
+  "api_gateway": "http://localhost:8003",
+  "postgres_host": "localhost:5434",
+  "redis_host": "localhost:6381",
+  "read_only": true
+}

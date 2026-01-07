@@ -1,0 +1,14 @@
+{
+  "region_name": "us-east-1",
+  "role": "primary",
+  "kafka_brokers": ["localhost:9092", "localhost:9093", "localhost:9094"],
+  "api_gateway": "http://localhost:8001",
+  "postgres_host": "localhost:5432",
+  "redis_host": "localhost:6379",
+  "capacity": {
+    "max_rps": 150000,
+    "brokers": 6,
+    "partitions": 18,
+    "consumer_groups": 50
+  }
+}
